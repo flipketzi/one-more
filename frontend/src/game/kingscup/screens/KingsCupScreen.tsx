@@ -81,6 +81,7 @@ const KingsCupScreenInner: React.FC = () => {
             players={state.turnOrder}
             myPlayerId={myPlayerId}
             isMyTurn={isMyTurn}
+            category={state.pendingCategory ?? undefined}
           />
         );
 

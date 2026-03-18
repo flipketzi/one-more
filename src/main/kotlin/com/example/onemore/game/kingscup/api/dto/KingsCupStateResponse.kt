@@ -15,7 +15,8 @@ data class KingsCupStateResponse(
     val kingsDrawn: Int,
     val kingsCupContents: List<String>,
     val touchRace: TouchRaceStateDto?,
-    val wordRound: WordRoundStateDto?
+    val wordRound: WordRoundStateDto?,
+    val pendingCategory: String? = null
 )
 
 data class PlayerSummaryDto(val id: String, val username: String, val avatar: String)

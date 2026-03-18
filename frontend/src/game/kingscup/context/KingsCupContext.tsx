@@ -43,6 +43,7 @@ const initialState: KCLocalState = {
   kingsCupContents: [],
   touchRace: null,
   wordRound: null,
+  pendingCategory: null,
   pendingSipNotification: null,
   touchRaceResult: null,
   wordRoundResult: null,
@@ -131,7 +132,7 @@ function reducer(state: KCLocalState, action: KCAction): KCLocalState {
     case 'THUMB_QUEEN_ASSIGNED':
       return {
         ...state,
-        thumbQueenId: action.queenPlayerId,
+        thumbQueenId: action.usesLeft > 0 ? action.queenPlayerId : null,
         thumbQueenUsesLeft: action.usesLeft,
       };
 
@@ -147,6 +148,7 @@ function reducer(state: KCLocalState, action: KCAction): KCLocalState {
         cardsRemaining: action.cardsRemaining,
         touchRace: null,
         wordRound: null,
+        pendingCategory: null,
       };
 
     case 'GAME_OVER':

@@ -56,6 +56,7 @@ export interface KingsCupState {
   kingsCupContents: string[];
   touchRace: TouchRaceStateDto | null;
   wordRound: WordRoundStateDto | null;
+  pendingCategory: string | null;
 }
 
 export type GameEvent =

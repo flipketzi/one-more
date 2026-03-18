@@ -186,24 +186,10 @@ class KingsCupService(
             }
             "10" -> {
                 val category = KingsCupData.randomCategory()
-                state.phase = GamePhase.WORD_ROUND
-                state.wordRound = WordRoundState(
-                    roundId = UUID.randomUUID().toString(),
-                    roundType = WordRoundType.CATEGORY,
-                    seedWord = category,
-                    currentSpeakerIndex = state.currentTurnIndex
-                )
+                state.phase = GamePhase.PICK_TARGET
+                state.pendingPickTarget = PendingPickTarget(PickTargetType.SIP_PICK, drawer.id.toString())
+                state.pendingCategory = category
                 gameEventPublisher.publish(CardDrawnEvent(code, card, drawer.id.toString(), drawer.username, state.phase.name))
-                gameEventPublisher.publish(
-                    WordRoundStartedEvent(
-                        sessionCode = code,
-                        roundId = state.wordRound!!.roundId,
-                        roundType = "CATEGORY",
-                        seedWord = category,
-                        firstSpeakerPlayerId = drawer.id.toString(),
-                        firstSpeakerUsername = drawer.username
-                    )
-                )
             }
             "J" -> {
                 state.phase = GamePhase.SUBMIT_JACK_RULE
@@ -214,14 +200,14 @@ class KingsCupService(
                 // Invalidate previous thumb queen
                 val oldQueenId = state.thumbQueenId
                 state.thumbQueenId = drawer.id.toString()
-                state.thumbQueenUsesLeft = 1
+                state.thumbQueenUsesLeft = 3
                 gameEventPublisher.publish(CardDrawnEvent(code, card, drawer.id.toString(), drawer.username, state.phase.name))
                 gameEventPublisher.publish(
                     ThumbQueenAssignedEvent(
                         sessionCode = code,
                         queenPlayerId = drawer.id.toString(),
                         queenUsername = drawer.username,
-                        usesLeft = 1
+                        usesLeft = 3
                     )
                 )
             }
@@ -286,6 +272,7 @@ class KingsCupService(
         state.phase = GamePhase.WAITING_TO_DRAW
         state.currentCard = null
         state.pendingPickTarget = null
+        state.pendingCategory = null
 
         val players = playerRepository.findBySessionId(
             requireSession(code).id
@@ -511,7 +498,8 @@ class KingsCupService(
         }
 
         state.thumbQueenUsesLeft--
-        if (state.thumbQueenUsesLeft <= 0) {
+        val newUsesLeft = state.thumbQueenUsesLeft
+        if (newUsesLeft <= 0) {
             state.thumbQueenId = null
         }
 
@@ -524,6 +512,16 @@ class KingsCupService(
 
         state.phase = GamePhase.TOUCH_RACE
         persist(entity, state)
+
+        // Notify all clients of updated uses so frontend counter stays in sync
+        gameEventPublisher.publish(
+            ThumbQueenAssignedEvent(
+                sessionCode = code,
+                queenPlayerId = playerId,
+                queenUsername = queen.username,
+                usesLeft = newUsesLeft
+            )
+        )
 
         startTouchRace(state, code, queen, eligibleIds, TouchRaceType.QUEEN)
         persist(entity, state)
@@ -722,7 +720,8 @@ class KingsCupService(
                         )
                     }
                 )
-            }
+            },
+            pendingCategory = state.pendingCategory
         )
     }
 }

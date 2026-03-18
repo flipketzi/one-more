@@ -14,7 +14,8 @@ data class KingsCupGameState(
     val kingsCupContents: MutableList<String> = mutableListOf(),
     var touchRace: TouchRaceState? = null,
     var wordRound: WordRoundState? = null,
-    var pendingPickTarget: PendingPickTarget? = null
+    var pendingPickTarget: PendingPickTarget? = null,
+    var pendingCategory: String? = null
 )
 
 data class TouchRaceState(
