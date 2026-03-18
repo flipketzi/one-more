@@ -39,7 +39,7 @@ class WebConfig(
 
     override fun addCorsMappings(registry: CorsRegistry) {
         registry.addMapping("/api/**")
-            .allowedOrigins("http://localhost:3000", "http://localhost:5173")
+            .allowedOrigins("http://localhost:3000", "http://localhost:5173", "https://one-more.ketzberg.dev")
             .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
             .allowedHeaders("*")
             .allowCredentials(true)
