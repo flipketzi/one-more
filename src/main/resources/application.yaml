@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: one-more
+  profiles:
+    active: dev
+
+app:
+  jwt:
+    secret: dev-secret-must-be-at-least-32-characters!!
+    expiry-hours: 4
+  session:
+    max-players: 12
+  rate-limit:
+    max-attempts: 10
+    window-seconds: 60
