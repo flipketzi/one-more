@@ -74,16 +74,29 @@ const KingsCupScreenInner: React.FC = () => {
           />
         );
 
-      case 'PICK_TARGET':
+      case 'PICK_TARGET': {
+        const rank = state.currentCard ? state.currentCard.slice(0, -1) : null;
+        const isCategory = rank === '10';
+        const isRhyme = rank === '9';
         return (
           <SipPickView
             sessionCode={session.code}
             players={state.turnOrder}
             myPlayerId={myPlayerId}
             isMyTurn={isMyTurn}
-            category={state.pendingCategory ?? undefined}
+            pendingWord={state.pendingCategory ?? undefined}
+            wordLabel={isRhyme ? 'Rhyme with' : isCategory ? 'Category' : undefined}
+            hint={
+              isCategory
+                ? 'Play the category game first, then pick who messed up.'
+                : isRhyme
+                ? 'Play the rhyme game first, then pick who lost.'
+                : undefined
+            }
+            includeDrawer={isCategory || isRhyme}
           />
         );
+      }
 
       case 'PICK_BUDDY':
         return (

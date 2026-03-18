@@ -165,24 +165,10 @@ class KingsCupService(
             }
             "9" -> {
                 val seed = KingsCupData.randomRhymeSeed()
-                state.phase = GamePhase.WORD_ROUND
-                state.wordRound = WordRoundState(
-                    roundId = UUID.randomUUID().toString(),
-                    roundType = WordRoundType.RHYME,
-                    seedWord = seed,
-                    currentSpeakerIndex = state.currentTurnIndex
-                )
+                state.phase = GamePhase.PICK_TARGET
+                state.pendingPickTarget = PendingPickTarget(PickTargetType.SIP_PICK, drawer.id.toString())
+                state.pendingCategory = seed
                 gameEventPublisher.publish(CardDrawnEvent(code, card, drawer.id.toString(), drawer.username, state.phase.name))
-                gameEventPublisher.publish(
-                    WordRoundStartedEvent(
-                        sessionCode = code,
-                        roundId = state.wordRound!!.roundId,
-                        roundType = "RHYME",
-                        seedWord = seed,
-                        firstSpeakerPlayerId = drawer.id.toString(),
-                        firstSpeakerUsername = drawer.username
-                    )
-                )
             }
             "10" -> {
                 val category = KingsCupData.randomCategory()
