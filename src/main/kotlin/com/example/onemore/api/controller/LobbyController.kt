@@ -33,4 +33,11 @@ class LobbyController(private val lobbyService: LobbyService) {
         @PathVariable code: String,
         @CurrentPlayer context: PlayerContext
     ) = lobbyService.startGame(context, code)
+
+    @PostMapping("/return-to-lobby")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun returnToLobby(
+        @PathVariable code: String,
+        @CurrentPlayer context: PlayerContext
+    ) = lobbyService.returnToLobby(context, code)
 }

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useGame } from '../context/GameContext';
+import { useLocale } from '../context/LocaleContext';
 import { joinSession } from '../api/client';
 import { JoinSessionResponse } from '../types';
 
@@ -9,6 +10,7 @@ const SAVED_AVATAR_KEY = 'onemore_avatar';
 
 export const JoinScreen: React.FC = () => {
   const { goTo, setAuth, setSession } = useGame();
+  const { t } = useLocale();
   const [code, setCode] = useState('');
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState('');
@@ -19,7 +21,7 @@ export const JoinScreen: React.FC = () => {
   const handleJoin = async () => {
     const trimmed = code.trim().toUpperCase();
     if (trimmed.length !== 5) {
-      setError('Session codes are exactly 5 characters.');
+      setError(t.join.errorLength);
       return;
     }
 
@@ -32,11 +34,11 @@ export const JoinScreen: React.FC = () => {
       goTo('lobby');
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      if (msg?.includes('not found')) setError('Session not found. Double-check the code.');
-      else if (msg?.includes('full')) setError('Session is full.');
-      else if (msg?.includes('taken')) setError('Username already taken in this session.');
-      else if (msg?.includes('Too many')) setError('Too many attempts. Please wait a moment.');
-      else setError('Could not join session. Please try again.');
+      if (msg?.includes('not found')) setError(t.join.errorNotFound);
+      else if (msg?.includes('full')) setError(t.join.errorFull);
+      else if (msg?.includes('taken')) setError(t.join.errorTaken);
+      else if (msg?.includes('Too many')) setError(t.join.errorTooMany);
+      else setError(t.join.errorGeneral);
     } finally {
       setJoining(false);
     }
@@ -54,20 +56,20 @@ export const JoinScreen: React.FC = () => {
           onClick={() => goTo('home')}
           className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-6 text-sm"
         >
-          ← Back
+          {t.join.back}
         </button>
 
         <div className="text-center mb-8">
           <div className="text-5xl mb-3">🔑</div>
-          <h2 className="text-3xl font-black text-white">Join a Session</h2>
-          <p className="text-slate-400 text-sm mt-1">Enter the 5-character code from your host</p>
+          <h2 className="text-3xl font-black text-white">{t.join.title}</h2>
+          <p className="text-slate-400 text-sm mt-1">{t.join.subtitle}</p>
         </div>
 
         <div className="glass rounded-3xl p-6 space-y-5">
           {/* Code input */}
           <div>
             <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">
-              Session Code
+              {t.join.codeLabel}
             </label>
             <input
               type="text"
@@ -121,12 +123,12 @@ export const JoinScreen: React.FC = () => {
               disabled:opacity-50 disabled:cursor-not-allowed
             "
           >
-            {joining ? 'Joining…' : 'Join the Party! 🎉'}
+            {joining ? t.join.joining : t.join.cta}
           </motion.button>
         </div>
 
         <p className="text-center text-slate-600 text-xs mt-4">
-          Joining as <span className="text-slate-400 font-medium">{username}</span>
+          {t.join.joiningAsBefore} <span className="text-slate-400 font-medium">{username}</span>
         </p>
       </motion.div>
     </div>

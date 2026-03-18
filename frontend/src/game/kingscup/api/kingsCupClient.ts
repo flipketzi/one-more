@@ -24,3 +24,6 @@ export const submitJackRule = (code: string, ruleText: string) =>
 
 export const advanceTurn = (code: string) =>
   api.post(`/sessions/${code}/game/advance`);
+
+export const returnToLobby = (code: string) =>
+  api.post(`/sessions/${code}/return-to-lobby`);

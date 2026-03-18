@@ -3,20 +3,22 @@ import { motion } from 'framer-motion';
 import { AvatarPicker } from '../components/AvatarPicker';
 import { AvatarDisplay } from '../components/AvatarDisplay';
 import { useGame } from '../context/GameContext';
+import { useLocale } from '../context/LocaleContext';
 
 const SAVED_NAME_KEY = 'onemore_username';
 const SAVED_AVATAR_KEY = 'onemore_avatar';
 
 export const SetupScreen: React.FC = () => {
   const { goTo } = useGame();
+  const { t } = useLocale();
   const [username, setUsername] = useState(() => localStorage.getItem(SAVED_NAME_KEY) ?? '');
   const [avatar, setAvatar] = useState(() => localStorage.getItem(SAVED_AVATAR_KEY) ?? 'avatar_beer');
   const [error, setError] = useState('');
 
   const validate = (name: string) => {
-    if (name.trim().length < 2) return 'Name must be at least 2 characters.';
-    if (name.trim().length > 32) return 'Name must be 32 characters or less.';
-    if (!/^[A-Za-z0-9_\- ]+$/.test(name.trim())) return 'Only letters, numbers, spaces, - and _ are allowed.';
+    if (name.trim().length < 2) return t.setup.errorTooShort;
+    if (name.trim().length > 32) return t.setup.errorTooLong;
+    if (!/^[A-Za-z0-9_\- ]+$/.test(name.trim())) return t.setup.errorInvalidChars;
     return '';
   };
 
@@ -41,7 +43,7 @@ export const SetupScreen: React.FC = () => {
           <h1 className="text-4xl font-black text-white tracking-tight">
             One<span className="text-amber-400">More</span>
           </h1>
-          <p className="text-slate-400 mt-1">Set up your drinking persona</p>
+          <p className="text-slate-400 mt-1">{t.setup.subtitle}</p>
         </div>
 
         <div className="glass rounded-3xl p-6 space-y-6">
@@ -50,14 +52,14 @@ export const SetupScreen: React.FC = () => {
             <AvatarDisplay avatarId={avatar} size="xl" showRing />
             <div className="flex-1">
               <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">
-                Your name
+                {t.setup.nameLabel}
               </label>
               <input
                 type="text"
                 value={username}
                 onChange={e => { setUsername(e.target.value); setError(''); }}
                 onKeyDown={e => e.key === 'Enter' && proceed()}
-                placeholder="e.g. Drunk Wizard"
+                placeholder={t.setup.namePlaceholder}
                 maxLength={32}
                 className={`
                   w-full bg-white/10 border rounded-xl px-3 py-2.5 text-white placeholder-slate-500
@@ -72,7 +74,7 @@ export const SetupScreen: React.FC = () => {
           {/* Avatar picker */}
           <div>
             <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-3">
-              Pick your avatar
+              {t.setup.avatarLabel}
             </label>
             <AvatarPicker selected={avatar} onChange={setAvatar} />
           </div>
@@ -84,7 +86,7 @@ export const SetupScreen: React.FC = () => {
             onClick={proceed}
             className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-400 text-black font-bold text-base shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 transition-shadow"
           >
-            Ready to drink! 🍻
+            {t.setup.cta}
           </motion.button>
         </div>
       </motion.div>

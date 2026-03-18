@@ -1,10 +1,11 @@
-import React, { useEffect } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import React, { useEffect, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { KingsCupProvider, useKingsCup } from '../context/KingsCupContext';
 import { useKingsCupWebSocket } from '../hooks/useKingsCupWebSocket';
 import { useGame } from '../../../context/GameContext';
-import { getGameState } from '../api/kingsCupClient';
+import { getGameState, returnToLobby } from '../api/kingsCupClient';
 
+import { useLocale } from '../../../context/LocaleContext';
 import { CardDisplay } from '../components/CardDisplay';
 import { PlayerStrip } from '../components/PlayerStrip';
 import { ThumbQueenButton } from '../components/ThumbQueenButton';
@@ -42,8 +43,11 @@ const KingsCupScreenInner: React.FC = () => {
     );
   }
 
+  const { t } = useLocale();
+  const [returningToLobby, setReturningToLobby] = useState(false);
   const myPlayerId = player.id;
   const isMyTurn = state.currentDrawerPlayerId === myPlayerId;
+  const isHost = session.hostId === myPlayerId;
   const currentDrawer = state.turnOrder.find(p => p.id === state.currentDrawerPlayerId);
   const drawerUsername = currentDrawer?.username ?? 'Someone';
   const isThumbQueen = state.thumbQueenId === myPlayerId && state.thumbQueenUsesLeft > 0;
@@ -85,12 +89,12 @@ const KingsCupScreenInner: React.FC = () => {
             myPlayerId={myPlayerId}
             isMyTurn={isMyTurn}
             pendingWord={state.pendingCategory ?? undefined}
-            wordLabel={isRhyme ? 'Rhyme with' : isCategory ? 'Category' : undefined}
+            wordLabel={isRhyme ? t.kingsCup.wordLabelRhyme : isCategory ? t.kingsCup.wordLabelCategory : undefined}
             hint={
               isCategory
-                ? 'Play the category game first, then pick who messed up.'
+                ? t.kingsCup.playFirstCategory
                 : isRhyme
-                ? 'Play the rhyme game first, then pick who lost.'
+                ? t.kingsCup.playFirstRhyme
                 : undefined
             }
             includeDrawer={isCategory || isRhyme}
@@ -180,6 +184,29 @@ const KingsCupScreenInner: React.FC = () => {
         <ThumbQueenButton sessionCode={session.code} usesLeft={state.thumbQueenUsesLeft} />
       )}
 
+      {/* Return to Lobby button — host only */}
+      {isHost && (
+        <motion.button
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          disabled={returningToLobby}
+          onClick={async () => {
+            if (returningToLobby) return;
+            setReturningToLobby(true);
+            try {
+              await returnToLobby(session.code);
+            } catch {
+              setReturningToLobby(false);
+            }
+          }}
+          className="fixed bottom-24 left-4 z-40 px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-white text-xs font-bold disabled:opacity-50"
+        >
+          🚪 {t.kingsCup.returnToLobby}
+        </motion.button>
+      )}
+
       {/* Header */}
       <div className="px-4 pt-safe-top pt-4 pb-3 flex items-center justify-between border-b border-white/10">
         <div className="flex items-center gap-2">
@@ -188,7 +215,7 @@ const KingsCupScreenInner: React.FC = () => {
         </div>
         <div className="flex items-center gap-3 text-sm">
           <span className="text-slate-400">
-            <span className="text-white font-bold">{state.cardsRemaining}</span> cards
+            <span className="text-white font-bold">{t.kingsCup.cards(state.cardsRemaining)}</span>
           </span>
           {state.kingsDrawn > 0 && (
             <span className="text-amber-400 font-bold">👑 {state.kingsDrawn}/4</span>

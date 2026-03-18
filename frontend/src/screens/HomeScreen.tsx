@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useGame } from '../context/GameContext';
+import { useLocale } from '../context/LocaleContext';
 import { createSession } from '../api/client';
 import { AvatarDisplay } from '../components/AvatarDisplay';
 import { CreateSessionResponse } from '../types';
@@ -10,6 +11,7 @@ const SAVED_AVATAR_KEY = 'onemore_avatar';
 
 export const HomeScreen: React.FC = () => {
   const { goTo, setAuth, setSession, notify } = useGame();
+  const { t } = useLocale();
   const [hosting, setHosting] = useState(false);
 
   const username = localStorage.getItem(SAVED_NAME_KEY) ?? 'Guest';
@@ -29,7 +31,7 @@ export const HomeScreen: React.FC = () => {
       });
       goTo('lobby');
     } catch {
-      notify('Failed to create session. Is the backend running?', 'error');
+      notify(t.home.errorCreate, 'error');
     } finally {
       setHosting(false);
     }
@@ -46,7 +48,7 @@ export const HomeScreen: React.FC = () => {
         <h1 className="text-5xl font-black tracking-tight">
           One<span className="text-amber-400">More</span>
         </h1>
-        <p className="text-slate-400 mt-1 text-sm">The ultimate drinking game hub 🍻</p>
+        <p className="text-slate-400 mt-1 text-sm">{t.home.tagline}</p>
       </motion.div>
 
       {/* Player card */}
@@ -58,14 +60,14 @@ export const HomeScreen: React.FC = () => {
       >
         <AvatarDisplay avatarId={avatar} size="lg" showRing />
         <div>
-          <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Playing as</p>
+          <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">{t.home.playingAs}</p>
           <p className="text-white font-bold text-lg leading-tight">{username}</p>
         </div>
         <button
           onClick={() => goTo('setup')}
           className="ml-auto text-xs text-slate-500 hover:text-amber-400 transition-colors px-2 py-1 rounded-lg hover:bg-white/5"
         >
-          Edit
+          {t.home.edit}
         </button>
       </motion.div>
 
@@ -90,13 +92,13 @@ export const HomeScreen: React.FC = () => {
           "
         >
           {hosting ? (
-            <span className="animate-pulse">Creating…</span>
+            <span className="animate-pulse">{t.home.creating}</span>
           ) : (
             <>
               <span className="text-2xl">🏠</span>
               <div className="text-left">
-                <p>Host a Session</p>
-                <p className="text-[11px] font-medium opacity-70">You're in charge, chief</p>
+                <p>{t.home.hostLabel}</p>
+                <p className="text-[11px] font-medium opacity-70">{t.home.hostSub}</p>
               </div>
             </>
           )}
@@ -114,15 +116,15 @@ export const HomeScreen: React.FC = () => {
         >
           <span className="text-2xl">🔑</span>
           <div className="text-left">
-            <p className="text-white">Join a Session</p>
-            <p className="text-[11px] font-medium text-slate-400">Got an invite code?</p>
+            <p className="text-white">{t.home.joinLabel}</p>
+            <p className="text-[11px] font-medium text-slate-400">{t.home.joinSub}</p>
           </div>
         </motion.button>
       </motion.div>
 
       {/* Footer */}
       <p className="text-slate-700 text-xs text-center absolute bottom-4">
-        🍺 Drink responsibly · Never drink and drive
+        {t.home.footer}
       </p>
     </div>
   );

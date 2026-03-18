@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { submitWord } from '../api/kingsCupClient';
 import { WordRoundStateDto } from '../types';
+import { useLocale } from '../../../context/LocaleContext';
 
 interface Props {
   sessionCode: string;
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export const WordRoundView: React.FC<Props> = ({ sessionCode, wordRound, myPlayerId, players }) => {
+  const { t } = useLocale();
   const speakerUsername = players.find(p => p.id === wordRound.currentSpeakerPlayerId)?.username ?? wordRound.currentSpeakerPlayerId;
   const [inputWord, setInputWord] = useState('');
   const [loading, setLoading] = useState(false);
@@ -43,7 +45,7 @@ export const WordRoundView: React.FC<Props> = ({ sessionCode, wordRound, myPlaye
     <div className="w-full flex flex-col gap-4">
       <div className="glass rounded-2xl p-4 border border-white/10 text-center">
         <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">
-          {isRhyme ? 'Rhyme with' : 'Category'}
+          {isRhyme ? t.kingsCup.wordLabelRhyme : t.kingsCup.wordLabelCategory}
         </p>
         <p className="text-white font-black text-2xl">{wordRound.seedWord}</p>
       </div>
@@ -66,7 +68,7 @@ export const WordRoundView: React.FC<Props> = ({ sessionCode, wordRound, myPlaye
               value={inputWord}
               onChange={e => setInputWord(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-              placeholder={isRhyme ? 'Your rhyme…' : 'Your answer…'}
+              placeholder={isRhyme ? t.kingsCup.yourRhyme : t.kingsCup.yourAnswer}
               className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-slate-500 outline-none focus:border-amber-400"
               autoFocus
             />
@@ -85,12 +87,13 @@ export const WordRoundView: React.FC<Props> = ({ sessionCode, wordRound, myPlaye
             disabled={loading}
             className="py-2 rounded-xl border border-red-500/40 text-red-400 font-medium text-sm disabled:opacity-50"
           >
-            Pass (drink) ❌
+            {t.kingsCup.pass}
           </motion.button>
         </div>
       ) : (
         <p className="text-center text-slate-400 text-sm">
-          Waiting for <span className="text-white font-semibold">{speakerUsername}</span>…
+          {t.kingsCup.waitingForSpeakerBefore}{' '}
+          <span className="text-white font-semibold">{speakerUsername}</span>…
         </p>
       )}
     </div>

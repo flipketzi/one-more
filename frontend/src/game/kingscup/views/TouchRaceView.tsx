@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { registerTouch } from '../api/kingsCupClient';
 import { TouchRaceStateDto } from '../types';
+import { useLocale } from '../../../context/LocaleContext';
 
 interface Props {
   sessionCode: string;
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export const TouchRaceView: React.FC<Props> = ({ sessionCode, touchRace, myPlayerId }) => {
+  const { t } = useLocale();
   const [countdown, setCountdown] = useState(touchRace.windowSeconds);
   const [touched, setTouched] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -39,8 +41,8 @@ export const TouchRaceView: React.FC<Props> = ({ sessionCode, touchRace, myPlaye
   if (!isEligible) {
     return (
       <div className="text-center py-4">
-        <p className="text-slate-400 text-sm">Watch the race…</p>
-        <p className="text-slate-500 text-xs mt-1">{countdown}s remaining</p>
+        <p className="text-slate-400 text-sm">{t.kingsCup.watchRace}</p>
+        <p className="text-slate-500 text-xs mt-1">{t.kingsCup.secondsRemaining(countdown)}</p>
       </div>
     );
   }
@@ -49,16 +51,16 @@ export const TouchRaceView: React.FC<Props> = ({ sessionCode, touchRace, myPlaye
     return (
       <div className="text-center py-6">
         <div className="text-5xl mb-2">✅</div>
-        <p className="text-emerald-400 font-bold">You touched it!</p>
-        <p className="text-slate-400 text-xs mt-1">{countdown}s remaining</p>
+        <p className="text-emerald-400 font-bold">{t.kingsCup.youTouched}</p>
+        <p className="text-slate-400 text-xs mt-1">{t.kingsCup.secondsRemaining(countdown)}</p>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <p className="text-white font-bold text-lg">Touch the button!</p>
-      <p className="text-slate-400 text-sm">{countdown}s remaining</p>
+      <p className="text-white font-bold text-lg">{t.kingsCup.touchButton}</p>
+      <p className="text-slate-400 text-sm">{t.kingsCup.secondsRemaining(countdown)}</p>
       <motion.button
         animate={{ scale: [1, 1.05, 1], boxShadow: ['0 0 20px rgba(249,115,22,0.3)', '0 0 40px rgba(249,115,22,0.6)', '0 0 20px rgba(249,115,22,0.3)'] }}
         transition={{ duration: 1, repeat: Infinity }}
@@ -70,7 +72,7 @@ export const TouchRaceView: React.FC<Props> = ({ sessionCode, touchRace, myPlaye
         👇
       </motion.button>
       <p className="text-slate-400 text-xs">
-        {touchRace.touchedPlayerIds.length}/{touchRace.eligiblePlayerIds.length} players touched
+        {t.kingsCup.playersTouched(touchRace.touchedPlayerIds.length, touchRace.eligiblePlayerIds.length)}
       </p>
     </div>
   );

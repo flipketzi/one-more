@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGame } from '../context/GameContext';
+import { useLocale } from '../context/LocaleContext';
 import { useLobbyWebSocket } from '../hooks/useLobbyWebSocket';
 import { PlayerCard } from '../components/PlayerCard';
+import { LanguageSelector } from '../components/LanguageSelector';
 import { leaveSession, selectGame, kickPlayer, startGame } from '../api/client';
 import { GAMES, GameType } from '../types';
 
 export const LobbyScreen: React.FC = () => {
   const { session, player, token, goTo, updateSession, clearSession, notify } = useGame();
+  const { t } = useLocale();
   const [copied, setCopied] = useState(false);
   const [starting, setStarting] = useState(false);
 
@@ -38,7 +41,7 @@ export const LobbyScreen: React.FC = () => {
       await selectGame(session.code, gameType);
       updateSession(prev => ({ ...prev, gameType }));
     } catch {
-      notify('Failed to select game.', 'error');
+      notify(t.lobby.errorSelect, 'error');
     }
   };
 
@@ -46,7 +49,7 @@ export const LobbyScreen: React.FC = () => {
     try {
       await kickPlayer(session.code, playerId);
     } catch {
-      notify('Failed to kick player.', 'error');
+      notify(t.lobby.errorKick, 'error');
     }
   };
 
@@ -55,7 +58,7 @@ export const LobbyScreen: React.FC = () => {
     try {
       await startGame(session.code);
     } catch {
-      notify('Failed to start the game.', 'error');
+      notify(t.lobby.errorStart, 'error');
       setStarting(false);
     }
   };
@@ -67,7 +70,7 @@ export const LobbyScreen: React.FC = () => {
       {/* Top bar */}
       <div className="flex items-center justify-between px-4 pt-safe pt-4 pb-3 glass border-b border-white/5">
         <div>
-          <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Session Code</p>
+          <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">{t.lobby.sessionCode}</p>
           <button
             onClick={copyCode}
             className="flex items-center gap-2 group"
@@ -85,17 +88,20 @@ export const LobbyScreen: React.FC = () => {
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="text-xs text-amber-400/70"
             >
-              Copied!
+              {t.lobby.copied}
             </motion.p>
           )}
         </div>
 
-        <button
-          onClick={handleLeave}
-          className="px-3 py-2 rounded-xl text-sm font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all"
-        >
-          Leave ↩
-        </button>
+        <div className="flex items-center gap-2">
+          <LanguageSelector />
+          <button
+            onClick={handleLeave}
+            className="px-3 py-2 rounded-xl text-sm font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all"
+          >
+            {t.lobby.leave}
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto">
@@ -108,7 +114,9 @@ export const LobbyScreen: React.FC = () => {
               className="glass rounded-2xl p-3 text-center border border-amber-500/10"
             >
               <p className="text-amber-300/70 text-sm">
-                🍺 Share the code <strong className="text-amber-300">{session.code}</strong> with your friends to get the party started!
+                {t.lobby.shareCodeBefore}{' '}
+                <strong className="text-amber-300">{session.code}</strong>{' '}
+                {t.lobby.shareCodeAfter}
               </p>
             </motion.div>
           )}
@@ -117,7 +125,7 @@ export const LobbyScreen: React.FC = () => {
           <section>
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                Players
+                {t.lobby.players}
               </h2>
               <span className="text-xs text-slate-500 bg-white/5 px-2 py-0.5 rounded-full">
                 {activePlayers.length}/{session.maxPlayers ?? 12}
@@ -143,13 +151,14 @@ export const LobbyScreen: React.FC = () => {
           {/* Game selection */}
           <section>
             <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
-              {isHost ? 'Choose a Game' : 'Game'}
+              {isHost ? t.lobby.chooseGame : t.lobby.game}
             </h2>
 
             {isHost ? (
               <div className="space-y-2">
                 {GAMES.map(game => {
                   const isSelected = session.gameType === game.id;
+                  const gameT = t.games[game.id];
                   return (
                     <motion.button
                       key={game.id}
@@ -167,8 +176,8 @@ export const LobbyScreen: React.FC = () => {
                     >
                       <span className="text-3xl">{game.emoji}</span>
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold text-white">{game.name}</p>
-                        <p className="text-xs text-slate-400 leading-snug">{game.tagline}</p>
+                        <p className="font-bold text-white">{gameT.name}</p>
+                        <p className="text-xs text-slate-400 leading-snug">{gameT.tagline}</p>
                       </div>
                       {isSelected && (
                         <motion.span
@@ -190,15 +199,15 @@ export const LobbyScreen: React.FC = () => {
                 {selectedGame ? (
                   <>
                     <div className="text-4xl mb-2">{selectedGame.emoji}</div>
-                    <p className="font-bold text-white text-lg">{selectedGame.name}</p>
-                    <p className="text-slate-400 text-xs mt-1">{selectedGame.tagline}</p>
+                    <p className="font-bold text-white text-lg">{t.games[selectedGame.id].name}</p>
+                    <p className="text-slate-400 text-xs mt-1">{t.games[selectedGame.id].tagline}</p>
                   </>
                 ) : (
                   <div className="flex items-center justify-center gap-2 text-slate-500">
                     <motion.span animate={{ rotate: 360 }} transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}>
                       🍺
                     </motion.span>
-                    <p className="text-sm">Waiting for host to pick a game…</p>
+                    <p className="text-sm">{t.lobby.waitingForHostGame}</p>
                   </div>
                 )}
               </div>
@@ -222,21 +231,21 @@ export const LobbyScreen: React.FC = () => {
                 `}
               >
                 {starting ? (
-                  <span className="animate-pulse">Starting… 🎲</span>
+                  <span className="animate-pulse">{t.lobby.starting}</span>
                 ) : !session.gameType ? (
-                  '← Pick a game first'
+                  t.lobby.pickFirst
                 ) : activePlayers.length < 2 ? (
-                  'Need at least 2 players'
+                  t.lobby.needMorePlayers
                 ) : (
-                  '🚀 Start the Game!'
+                  t.lobby.start
                 )}
               </motion.button>
 
               {!canStart && (
                 <p className="text-center text-slate-600 text-xs mt-2">
                   {!session.gameType
-                    ? 'Select a game to unlock the start button'
-                    : 'Waiting for more players to join'}
+                    ? t.lobby.selectToUnlock
+                    : t.lobby.waitingForMore}
                 </p>
               )}
             </motion.div>
@@ -246,7 +255,7 @@ export const LobbyScreen: React.FC = () => {
           {!isHost && session.gameType && (
             <div className="text-center py-2">
               <p className="text-slate-500 text-sm animate-pulse-slow">
-                Waiting for host to start the game… 🥁
+                {t.lobby.waitingForStart}
               </p>
             </div>
           )}

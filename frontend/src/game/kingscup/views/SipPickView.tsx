@@ -2,6 +2,7 @@ import React from 'react';
 import { PlayerSummary } from '../types';
 import { pickTarget } from '../api/kingsCupClient';
 import { AvatarDisplay } from '../../../components/AvatarDisplay';
+import { useLocale } from '../../../context/LocaleContext';
 
 interface Props {
   sessionCode: string;
@@ -24,6 +25,7 @@ export const SipPickView: React.FC<Props> = ({
   hint,
   includeDrawer = false,
 }) => {
+  const { t } = useLocale();
   const [loading, setLoading] = React.useState(false);
   const [picked, setPicked] = React.useState<string | null>(null);
 
@@ -44,7 +46,9 @@ export const SipPickView: React.FC<Props> = ({
 
   const wordHeader = pendingWord && (
     <div className="glass rounded-2xl p-4 border border-white/10 text-center">
-      <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">{wordLabel ?? 'Category'}</p>
+      <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">
+        {wordLabel ?? t.kingsCup.wordLabelCategory}
+      </p>
       <p className="text-white font-black text-2xl">{pendingWord}</p>
     </div>
   );
@@ -53,11 +57,9 @@ export const SipPickView: React.FC<Props> = ({
     return (
       <div className="flex flex-col gap-3 w-full">
         {wordHeader}
-        {hint && (
-          <p className="text-center text-amber-400/80 text-xs italic">{hint}</p>
-        )}
+        {hint && <p className="text-center text-amber-400/80 text-xs italic">{hint}</p>}
         <p className="text-center text-slate-400 text-sm py-2">
-          {pendingWord ? 'The drawer is picking who lost…' : 'The drawer is picking someone to drink…'}
+          {pendingWord ? t.kingsCup.drawerPickingLost : t.kingsCup.drawerPickingSip}
         </p>
       </div>
     );
@@ -66,11 +68,9 @@ export const SipPickView: React.FC<Props> = ({
   return (
     <div className="w-full flex flex-col gap-3">
       {wordHeader}
-      {hint && (
-        <p className="text-center text-amber-400/80 text-xs italic">{hint}</p>
-      )}
+      {hint && <p className="text-center text-amber-400/80 text-xs italic">{hint}</p>}
       <p className="text-slate-300 text-sm text-center">
-        {pendingWord ? 'Who lost? They drink:' : 'Pick someone to take a sip:'}
+        {pendingWord ? t.kingsCup.whoLost : t.kingsCup.pickSip}
       </p>
       <div className="flex flex-col gap-2 max-h-48 overflow-y-auto">
         {visiblePlayers.map(p => (

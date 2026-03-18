@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { activateQueenButton } from '../api/kingsCupClient';
+import { useLocale } from '../../../context/LocaleContext';
 
 interface Props {
   sessionCode: string;
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export const ThumbQueenButton: React.FC<Props> = ({ sessionCode, usesLeft }) => {
+  const { t } = useLocale();
   const [loading, setLoading] = React.useState(false);
 
   const handleActivate = async () => {
@@ -33,7 +35,7 @@ export const ThumbQueenButton: React.FC<Props> = ({ sessionCode, usesLeft }) => 
       <div className="w-16 h-16 rounded-full bg-gradient-to-br from-fuchsia-500 to-purple-700 flex items-center justify-center shadow-xl border-2 border-fuchsia-400/50">
         <span className="text-2xl">👍</span>
       </div>
-      <span className="text-xs text-fuchsia-300 font-bold">{usesLeft} left</span>
+      <span className="text-xs text-fuchsia-300 font-bold">{t.kingsCup.usesLeft(usesLeft)}</span>
     </motion.button>
   );
 };

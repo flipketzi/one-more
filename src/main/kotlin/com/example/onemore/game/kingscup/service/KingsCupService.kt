@@ -628,6 +628,13 @@ class KingsCupService(
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
+    @Transactional
+    fun abandonGame(sessionId: UUID) {
+        kingsCupStateRepository.findBySessionId(sessionId)?.let {
+            kingsCupStateRepository.delete(it)
+        }
+    }
+
     private fun requireSession(code: String) =
         sessionRepository.findBySessionCode(code.uppercase())
             ?: throw SessionNotFoundException(code)

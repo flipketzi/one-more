@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { advanceTurn } from '../api/kingsCupClient';
-import { CARD_RULES } from '../util/cardDeck';
+import { useLocale } from '../../../context/LocaleContext';
 
 interface Props {
   sessionCode: string;
@@ -20,6 +20,7 @@ export const DisplayRuleView: React.FC<Props> = ({
   kingsCupContents,
   thumbQueenUsername,
 }) => {
+  const { t } = useLocale();
   const [loading, setLoading] = React.useState(false);
 
   const handleDone = async () => {
@@ -33,7 +34,7 @@ export const DisplayRuleView: React.FC<Props> = ({
   };
 
   const rank = currentCard ? currentCard.slice(0, -1) : null;
-  const rule = rank ? CARD_RULES[rank] : null;
+  const rule = rank ? t.kingsCup.cardRules[rank] : null;
 
   return (
     <div className="flex flex-col items-center gap-4 w-full">
@@ -45,16 +46,16 @@ export const DisplayRuleView: React.FC<Props> = ({
 
           {rank === 'K' && kingsDrawn !== undefined && (
             <div className="mt-3 text-amber-400 font-bold text-sm">
-              Kings drawn: {kingsDrawn}/4
+              {t.kingsCup.kingsDrawnLabel} {kingsDrawn}/4
               {kingsCupContents && kingsCupContents.length > 0 && (
-                <span className="ml-2 text-slate-400">• Cup: {kingsCupContents.join(', ')}</span>
+                <span className="ml-2 text-slate-400">{t.kingsCup.cupContentsLabel} {kingsCupContents.join(', ')}</span>
               )}
             </div>
           )}
 
           {rank === 'Q' && thumbQueenUsername && (
             <div className="mt-3 text-fuchsia-400 font-bold text-sm">
-              👑 {thumbQueenUsername} is now the Thumb Queen!
+              {t.kingsCup.thumbQueenIsNow(thumbQueenUsername)}
             </div>
           )}
         </div>
@@ -68,7 +69,7 @@ export const DisplayRuleView: React.FC<Props> = ({
           disabled={loading}
           className="px-8 py-3 rounded-2xl bg-gradient-to-r from-slate-600 to-slate-500 text-white font-bold disabled:opacity-60"
         >
-          {loading ? '…' : 'Done →'}
+          {loading ? '…' : t.kingsCup.done}
         </motion.button>
       )}
     </div>

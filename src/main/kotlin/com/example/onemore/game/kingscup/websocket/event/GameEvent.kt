@@ -107,6 +107,8 @@ class GameOverEvent(
     val reason: String
 ) : GameEvent("GAME_OVER", sessionCode)
 
+class GameAbandonedEvent(sessionCode: String) : GameEvent("GAME_ABANDONED", sessionCode)
+
 data class WordSubmissionDto(val playerId: String, val username: String, val word: String, val passed: Boolean)
 data class JackRuleDto(val ruleText: String, val authorUsername: String)
 

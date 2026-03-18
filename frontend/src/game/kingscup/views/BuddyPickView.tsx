@@ -2,6 +2,7 @@ import React from 'react';
 import { PlayerSummary } from '../types';
 import { pickTarget } from '../api/kingsCupClient';
 import { AvatarDisplay } from '../../../components/AvatarDisplay';
+import { useLocale } from '../../../context/LocaleContext';
 
 interface Props {
   sessionCode: string;
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export const BuddyPickView: React.FC<Props> = ({ sessionCode, players, myPlayerId, isMyTurn, drinkingBuddies }) => {
+  const { t } = useLocale();
   const [loading, setLoading] = React.useState(false);
   const [picked, setPicked] = React.useState<string | null>(null);
 
@@ -31,14 +33,14 @@ export const BuddyPickView: React.FC<Props> = ({ sessionCode, players, myPlayerI
   if (!isMyTurn) {
     return (
       <div className="text-center text-slate-400 text-sm py-4">
-        The drawer is picking a drinking buddy…
+        {t.kingsCup.drawerPickingBuddy}
       </div>
     );
   }
 
   return (
     <div className="w-full">
-      <p className="text-slate-300 text-sm text-center mb-3">Pick your drinking buddy:</p>
+      <p className="text-slate-300 text-sm text-center mb-3">{t.kingsCup.pickBuddy}</p>
       <div className="flex flex-col gap-2 max-h-48 overflow-y-auto">
         {players.filter(p => p.id !== myPlayerId).map(p => {
           const currentBuddy = drinkingBuddies[p.id];
@@ -55,7 +57,7 @@ export const BuddyPickView: React.FC<Props> = ({ sessionCode, players, myPlayerI
             >
               <AvatarDisplay avatarId={p.avatar} size="sm" />
               <span className="text-white font-medium">{p.username}</span>
-              {currentBuddy && <span className="ml-auto text-slate-400 text-xs">has buddy</span>}
+              {currentBuddy && <span className="ml-auto text-slate-400 text-xs">{t.kingsCup.hasBuddy}</span>}
               {picked === p.id && <span className="ml-auto text-teal-400">🤝</span>}
             </button>
           );

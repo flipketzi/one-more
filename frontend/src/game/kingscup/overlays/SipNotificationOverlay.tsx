@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useLocale } from '../../../context/LocaleContext';
 
 interface Props {
   assignedByUsername: string;
@@ -7,9 +8,11 @@ interface Props {
 }
 
 export const SipNotificationOverlay: React.FC<Props> = ({ assignedByUsername, onDismiss }) => {
+  const { t } = useLocale();
+
   useEffect(() => {
-    const t = setTimeout(onDismiss, 4000);
-    return () => clearTimeout(t);
+    const timer = setTimeout(onDismiss, 4000);
+    return () => clearTimeout(timer);
   }, [onDismiss]);
 
   return (
@@ -27,9 +30,9 @@ export const SipNotificationOverlay: React.FC<Props> = ({ assignedByUsername, on
       >
         🍺
       </motion.div>
-      <h1 className="text-white font-black text-5xl mb-3">DRINK!</h1>
-      <p className="text-red-200 text-lg">{assignedByUsername} says you drink!</p>
-      <p className="text-red-300 text-sm mt-8">Tap to dismiss</p>
+      <h1 className="text-white font-black text-5xl mb-3">{t.kingsCup.drink}</h1>
+      <p className="text-red-200 text-lg">{t.kingsCup.sipSaysYouDrink(assignedByUsername)}</p>
+      <p className="text-red-300 text-sm mt-8">{t.kingsCup.tapToDismiss}</p>
     </motion.div>
   );
 };

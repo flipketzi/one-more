@@ -4,6 +4,8 @@ import com.example.onemore.api.websocket.LobbyEventPublisher
 import com.example.onemore.api.websocket.event.GameSelectedEvent
 import com.example.onemore.api.websocket.event.PlayerKickedEvent
 import com.example.onemore.api.websocket.event.SessionStartingEvent
+import com.example.onemore.game.kingscup.websocket.GameEventPublisher
+import com.example.onemore.game.kingscup.websocket.event.GameAbandonedEvent
 import com.example.onemore.domain.model.GameType
 import com.example.onemore.domain.model.PlayerStatus
 import com.example.onemore.domain.model.SessionStatus
@@ -26,7 +28,8 @@ class LobbyService(
     private val sessionRepository: GameSessionRepository,
     private val playerRepository: PlayerRepository,
     private val lobbyEventPublisher: LobbyEventPublisher,
-    private val kingsCupService: KingsCupService
+    private val kingsCupService: KingsCupService,
+    private val gameEventPublisher: GameEventPublisher
 ) {
 
     @Transactional
@@ -98,6 +101,32 @@ class LobbyService(
         TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
             override fun afterCommit() {
                 lobbyEventPublisher.publish(SessionStartingEvent(sessionCode, gameType))
+            }
+        })
+    }
+
+    @Transactional
+    fun returnToLobby(context: PlayerContext, code: String) {
+        val session = sessionRepository.findBySessionCode(code.uppercase())
+            ?: throw SessionNotFoundException(code)
+
+        requireHost(context, session.hostId, session.sessionCode)
+
+        if (session.status != SessionStatus.IN_GAME) {
+            throw ForbiddenException("Session is not currently in a game")
+        }
+
+        session.status = SessionStatus.WAITING
+        session.gameType = null
+        session.updatedAt = Instant.now()
+        sessionRepository.save(session)
+
+        kingsCupService.abandonGame(session.id)
+
+        val sessionCode = session.sessionCode
+        TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
+            override fun afterCommit() {
+                gameEventPublisher.publish(GameAbandonedEvent(sessionCode))
             }
         })
     }

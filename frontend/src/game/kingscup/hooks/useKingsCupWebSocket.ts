@@ -3,10 +3,12 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { GameEvent } from '../types';
 import { useKingsCup } from '../context/KingsCupContext';
+import { useGame } from '../../../context/GameContext';
 import { getGameState } from '../api/kingsCupClient';
 
 export const useKingsCupWebSocket = (sessionCode: string | null, token: string | null) => {
   const { dispatch, dispatchGameEvent } = useKingsCup();
+  const { updateSession, goTo } = useGame();
   const clientRef = useRef<Client | null>(null);
 
   useEffect(() => {
@@ -31,6 +33,9 @@ export const useKingsCupWebSocket = (sessionCode: string | null, token: string |
         getGameState(sessionCode).then(state => {
           dispatch({ type: 'LOAD', payload: state });
         });
+      } else if (event.type === 'GAME_ABANDONED') {
+        updateSession(prev => ({ ...prev, status: 'WAITING', gameType: null }));
+        goTo('lobby');
       } else {
         dispatchGameEvent(event);
       }

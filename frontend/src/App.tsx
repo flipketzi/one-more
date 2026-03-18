@@ -1,6 +1,7 @@
 import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { GameProvider, useGame } from './context/GameContext';
+import { LocaleProvider } from './context/LocaleContext';
 import { AgeGateScreen } from './screens/AgeGateScreen';
 import { SetupScreen } from './screens/SetupScreen';
 import { HomeScreen } from './screens/HomeScreen';
@@ -64,7 +65,9 @@ const AppScreens: React.FC = () => {
 };
 
 export const App: React.FC = () => (
-  <GameProvider>
-    <AppScreens />
-  </GameProvider>
+  <LocaleProvider>
+    <GameProvider>
+      <AppScreens />
+    </GameProvider>
+  </LocaleProvider>
 );
