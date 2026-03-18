@@ -16,7 +16,7 @@ export const useKingsCupWebSocket = (sessionCode: string | null, token: string |
 
     const client = new Client({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      webSocketFactory: () => new SockJS('http://localhost:8080/ws') as any,
+      webSocketFactory: () => new SockJS(`${window.location.protocol}//${window.location.host}/ws`) as any,
       connectHeaders: { Authorization: `Bearer ${token}` },
       reconnectDelay: 5000,
       onConnect: () => {

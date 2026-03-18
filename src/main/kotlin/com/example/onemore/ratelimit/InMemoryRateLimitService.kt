@@ -8,7 +8,6 @@ import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 
 @Service
-@Profile("!prod")
 class InMemoryRateLimitService(
     @Value("\${app.rate-limit.max-attempts:10}") private val maxAttempts: Int,
     @Value("\${app.rate-limit.window-seconds:60}") private val windowSeconds: Long

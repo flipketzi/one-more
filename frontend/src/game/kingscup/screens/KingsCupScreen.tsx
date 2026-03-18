@@ -27,6 +27,8 @@ import { GameOverOverlay } from '../overlays/GameOverOverlay';
 const KingsCupScreenInner: React.FC = () => {
   const { state, dispatch } = useKingsCup();
   const { session, player, token } = useGame();
+  const { t } = useLocale();
+  const [returningToLobby, setReturningToLobby] = useState(false);
 
   useKingsCupWebSocket(session?.code ?? null, token);
 
@@ -43,8 +45,6 @@ const KingsCupScreenInner: React.FC = () => {
     );
   }
 
-  const { t } = useLocale();
-  const [returningToLobby, setReturningToLobby] = useState(false);
   const myPlayerId = player.id;
   const isMyTurn = state.currentDrawerPlayerId === myPlayerId;
   const isHost = session.hostId === myPlayerId;

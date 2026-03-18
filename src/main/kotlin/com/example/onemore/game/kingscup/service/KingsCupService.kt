@@ -628,6 +628,7 @@ class KingsCupService(
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
+
     @Transactional
     fun abandonGame(sessionId: UUID) {
         kingsCupStateRepository.findBySessionId(sessionId)?.let {

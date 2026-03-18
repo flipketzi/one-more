@@ -54,3 +54,6 @@ out/
 /frontend/stats.html
 
 /frontend/.eslintcache
+
+### Secrets ###
+.env
