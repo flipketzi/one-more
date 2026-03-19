@@ -2,8 +2,6 @@ import React, { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 
 const HOLD_DURATION_MS = 800;
-const RADIUS = 28;
-const CIRCUMFERENCE = 2 * Math.PI * RADIUS; // ≈ 175.9
 
 interface Props {
   onReveal: () => void;
@@ -39,73 +37,80 @@ export const DiceCup: React.FC<Props> = ({ onReveal, onRevealComplete, revealing
     setProgress(0);
   };
 
-  const strokeDashoffset = CIRCUMFERENCE * (1 - progress);
+  const glowAlpha = progress;
+  const glowAlphaWeak = progress * 0.4;
 
   return (
-    <div className="flex flex-col items-center gap-6">
-      {/* Cup visual */}
+    <div className="flex flex-col items-center gap-3">
       <motion.div
-        style={{ width: 80, height: 80, position: 'relative' }}
+        initial={{ y: -80, opacity: 0 }}
         animate={
           revealing
-            ? { y: '-120%', opacity: 0, scale: 0.8 }
-            : { y: [0, -6, 0], opacity: 1, scale: 1 }
+            ? { y: -200, rotate: -10, opacity: 0 }
+            : { y: [0, -5, 0], opacity: 1, rotate: 0 }
         }
         transition={
           revealing
-            ? { duration: 0.4, ease: 'easeIn' }
+            ? { duration: 0.45, ease: 'easeIn' }
             : { duration: 2, repeat: Infinity, ease: 'easeInOut', repeatType: 'loop' }
         }
         onAnimationComplete={() => {
           if (revealing) onRevealComplete();
         }}
+        style={{
+          boxShadow: progress > 0
+            ? `0 0 0 2px rgba(245,158,11,${glowAlpha}), 0 0 20px 4px rgba(245,158,11,${glowAlphaWeak})`
+            : undefined,
+          borderRadius: 16,
+        }}
+        onPointerDown={startHold}
+        onPointerUp={cancelHold}
+        onPointerLeave={cancelHold}
       >
-        {/* SVG ring centered around cup */}
         <svg
-          width={80}
-          height={80}
-          style={{ position: 'absolute', inset: 0, transform: 'rotate(-90deg)' }}
+          width={220}
+          height={180}
+          viewBox="0 0 220 180"
+          style={{ display: 'block', userSelect: 'none' }}
         >
-          <circle
-            cx={40}
-            cy={40}
-            r={RADIUS}
-            fill="none"
-            stroke="rgba(255,255,255,0.1)"
-            strokeWidth={4}
-          />
-          <circle
-            cx={40}
-            cy={40}
-            r={RADIUS}
-            fill="none"
-            stroke="#f59e0b"
-            strokeWidth={4}
-            strokeLinecap="round"
-            strokeDasharray={CIRCUMFERENCE}
-            strokeDashoffset={strokeDashoffset}
-            style={{ transition: 'stroke-dashoffset 0.016s linear' }}
-          />
-        </svg>
+          {/* Bottom shadow */}
+          <ellipse cx={110} cy={168} rx={70} ry={8} fill="rgba(0,0,0,0.35)" />
 
-        {/* Cup emoji — centered in the 80x80 box */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-14 h-14 rounded-2xl glass flex items-center justify-center text-3xl shadow-xl border border-white/20">
-            🎲
-          </div>
-        </div>
+          {/* Cup body — slightly conical (wider at top) */}
+          <path
+            d="M 50 30 L 30 155 Q 30 162 38 162 L 182 162 Q 190 162 190 155 L 170 30 Z"
+            fill="#4a2810"
+          />
+
+          {/* Inner shading for depth */}
+          <path
+            d="M 55 35 L 36 152 Q 36 158 42 158 L 178 158 Q 184 158 184 152 L 165 35 Z"
+            fill="#3a1e08"
+          />
+
+          {/* Rim — top ellipse for 3D opening */}
+          <ellipse cx={110} cy={30} rx={60} ry={12} fill="#5c3220" />
+          <ellipse cx={110} cy={30} rx={52} ry={9} fill="#2a1005" />
+
+          {/* Leather highlight — left strip */}
+          <path
+            d="M 62 42 L 46 148 Q 47 152 52 152 L 68 152 L 82 42 Z"
+            fill="rgba(255,255,255,0.07)"
+          />
+
+          {/* Bottom rim band */}
+          <path
+            d="M 30 148 Q 30 162 38 162 L 182 162 Q 190 162 190 148 Z"
+            fill="#7a4228"
+          />
+
+          {/* Rim top highlight */}
+          <ellipse cx={110} cy={28} rx={58} ry={10} fill="none" stroke="#8b5030" strokeWidth={2} />
+        </svg>
       </motion.div>
 
-      {/* Hold button */}
-      {!revealing && (
-        <button
-          className="px-6 py-3 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold text-sm select-none active:scale-95 transition-transform"
-          onPointerDown={startHold}
-          onPointerUp={cancelHold}
-          onPointerLeave={cancelHold}
-        >
-          Becher heben
-        </button>
+      {!revealing && progress === 0 && (
+        <p className="text-slate-500 text-xs select-none">Gedrückt halten zum Heben</p>
       )}
     </div>
   );
