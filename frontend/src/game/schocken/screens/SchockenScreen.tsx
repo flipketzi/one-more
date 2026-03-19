@@ -47,7 +47,7 @@ const SchockenScreenInner: React.FC = () => {
               key="cup"
               initial={{ opacity: 0, y: -80 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.8 }}
+              exit={{ opacity: 0 }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
             >
               <DiceCup

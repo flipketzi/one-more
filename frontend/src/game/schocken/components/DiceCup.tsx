@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import { motion } from 'framer-motion';
 
 const HOLD_DURATION_MS = 800;
@@ -10,8 +10,8 @@ interface Props {
 }
 
 export const DiceCup: React.FC<Props> = ({ onReveal, onRevealComplete, revealing }) => {
-  const [progress, setProgress] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const glowRef = useRef<HTMLDivElement>(null);
 
   const startHold = () => {
     if (revealing) return;
@@ -19,11 +19,15 @@ export const DiceCup: React.FC<Props> = ({ onReveal, onRevealComplete, revealing
     intervalRef.current = setInterval(() => {
       const elapsed = Date.now() - startTime;
       const p = Math.min(elapsed / HOLD_DURATION_MS, 1);
-      setProgress(p);
+      // Apply glow directly to DOM — no React re-render
+      if (glowRef.current) {
+        glowRef.current.style.boxShadow =
+          `0 0 0 2px rgba(245,158,11,${p}), 0 0 20px 4px rgba(245,158,11,${p * 0.4})`;
+      }
       if (p >= 1) {
         clearInterval(intervalRef.current!);
         intervalRef.current = null;
-        setProgress(0);
+        if (glowRef.current) glowRef.current.style.boxShadow = '';
         onReveal();
       }
     }, 16);
@@ -34,35 +38,28 @@ export const DiceCup: React.FC<Props> = ({ onReveal, onRevealComplete, revealing
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
-    setProgress(0);
+    if (glowRef.current) glowRef.current.style.boxShadow = '';
   };
-
-  const glowAlpha = progress;
-  const glowAlphaWeak = progress * 0.4;
 
   return (
     <div className="flex flex-col items-center gap-3">
       <motion.div
+        ref={glowRef}
         initial={{ y: -80, opacity: 0 }}
         animate={
           revealing
-            ? { y: -200, rotate: -10, opacity: 0 }
-            : { y: [0, -5, 0], opacity: 1, rotate: 0 }
+            ? { y: -240, rotate: -15, scale: 1.1 }
+            : { y: 0, opacity: 1 }
         }
         transition={
           revealing
-            ? { duration: 0.45, ease: 'easeIn' }
-            : { duration: 2, repeat: Infinity, ease: 'easeInOut', repeatType: 'loop' }
+            ? { duration: 0.55, ease: [0.2, 0, 0.4, 1] }
+            : { duration: 0.3, ease: 'easeOut' }
         }
         onAnimationComplete={() => {
           if (revealing) onRevealComplete();
         }}
-        style={{
-          boxShadow: progress > 0
-            ? `0 0 0 2px rgba(245,158,11,${glowAlpha}), 0 0 20px 4px rgba(245,158,11,${glowAlphaWeak})`
-            : undefined,
-          borderRadius: 16,
-        }}
+        style={{ borderRadius: 16 }}
         onPointerDown={startHold}
         onPointerUp={cancelHold}
         onPointerLeave={cancelHold}
@@ -109,7 +106,7 @@ export const DiceCup: React.FC<Props> = ({ onReveal, onRevealComplete, revealing
         </svg>
       </motion.div>
 
-      {!revealing && progress === 0 && (
+      {!revealing && (
         <p className="text-slate-500 text-xs select-none">Gedrückt halten zum Heben</p>
       )}
     </div>
