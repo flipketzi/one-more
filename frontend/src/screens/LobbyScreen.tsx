@@ -1,20 +1,25 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGame } from '../context/GameContext';
 import { useLocale } from '../context/LocaleContext';
 import { useLobbyWebSocket } from '../hooks/useLobbyWebSocket';
 import { PlayerCard } from '../components/PlayerCard';
 import { LanguageSelector } from '../components/LanguageSelector';
-import { leaveSession, selectGame, kickPlayer, startGame } from '../api/client';
+import { leaveSession, selectGame, kickPlayer, startGame, getSession } from '../api/client';
 import { GAMES, GameType } from '../types';
 
 export const LobbyScreen: React.FC = () => {
-  const { session, player, token, goTo, updateSession, clearSession, notify } = useGame();
+  const { session, player, token, goTo, updateSession, setSession, clearSession, notify } = useGame();
   const { t } = useLocale();
   const [copied, setCopied] = useState(false);
   const [starting, setStarting] = useState(false);
 
   useLobbyWebSocket(session?.code ?? null, token);
+
+  useEffect(() => {
+    if (!session?.code) return;
+    getSession(session.code).then(setSession).catch(() => {/* session might have ended */});
+  }, [session?.code]);
 
   if (!session || !player) return null;
 
