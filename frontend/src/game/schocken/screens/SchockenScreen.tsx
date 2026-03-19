@@ -116,7 +116,7 @@ const SchockenScreenInner: React.FC = () => {
           </motion.button>
         )}
 
-        {/* CUP_UP: roll again or stand */}
+        {/* CUP_UP: roll again + stand */}
         {canRollAgain && (
           <div className="flex flex-col gap-2 w-full max-w-xs">
             <motion.button
@@ -142,9 +142,18 @@ const SchockenScreenInner: React.FC = () => {
           </div>
         )}
 
-        {/* CUP_UP: forced reveal after max rolls */}
+        {/* CUP_UP: max rolls used — must reveal publicly */}
         {mustReveal && (
-          <p className="text-slate-400 text-sm">Hebe den Becher auf um deine Hand aufzudecken</p>
+          <motion.button
+            key="reveal-btn"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={game.revealToAll}
+            className="w-full max-w-xs py-4 rounded-2xl bg-amber-500 text-slate-900 font-black text-lg shadow-lg"
+          >
+            Aufdecken
+          </motion.button>
         )}
 
         {/* Rolling indicator */}

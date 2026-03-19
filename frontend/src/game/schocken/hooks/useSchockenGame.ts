@@ -26,7 +26,8 @@ export interface SchockenGameHook {
   toggleKeep: (dieId: number) => void;
   roll: () => Promise<void>;
   reveal: () => void;
-  onRevealComplete: () => Promise<void>;
+  onRevealComplete: () => void;      // after animation → CUP_UP (no API call)
+  revealToAll: () => Promise<void>;  // explicit public reveal → API call
   stand: () => Promise<void>;
 }
 
@@ -240,13 +241,19 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
     setPhase('REVEALING');
   }, []);
 
-  const onRevealComplete = useCallback(async () => {
+  // Called after the cup-lift animation completes — just shows YOUR dice, no server call yet.
+  const onRevealComplete = useCallback(() => {
+    setPhase('CUP_UP');
+  }, []);
+
+  // Called explicitly by the player when they want to broadcast their hand to everyone.
+  const revealToAll = useCallback(async () => {
     try {
       const hand = await revealHand(sessionCode);
       setMyHand(hand);
       setPhase('FINISHED');
     } catch {
-      setPhase('CUP_UP');
+      // stay in CUP_UP
     }
   }, [sessionCode]);
 
@@ -277,6 +284,7 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
     roll,
     reveal,
     onRevealComplete,
+    revealToAll,
     stand,
   };
 }
