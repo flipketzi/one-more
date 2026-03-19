@@ -11,7 +11,7 @@ sealed class LobbyEvent(
     val timestamp: Instant = Instant.now()
 )
 
-class PlayerJoinedEvent(sessionCode: String, val player: PlayerResponse) :
+class PlayerJoinedEvent(sessionCode: String, val player: PlayerResponse, val players: List<PlayerResponse>) :
     LobbyEvent("PLAYER_JOINED", sessionCode)
 
 class PlayerLeftEvent(sessionCode: String, val playerId: UUID, val username: String) :

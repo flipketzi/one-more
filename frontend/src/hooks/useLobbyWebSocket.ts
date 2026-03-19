@@ -30,10 +30,7 @@ export const useLobbyWebSocket = (sessionCode: string | null, token: string | nu
     const handleEvent = (event: LobbyEvent) => {
       switch (event.type) {
         case 'PLAYER_JOINED':
-          updateSession(prev => ({
-            ...prev,
-            players: [...prev.players.filter(p => p.id !== event.player.id), event.player],
-          }));
+          updateSession(prev => ({ ...prev, players: event.players }));
           notify(`${event.player.username} joined the party! 🎉`, 'success');
           break;
 

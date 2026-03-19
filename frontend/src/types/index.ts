@@ -36,7 +36,7 @@ export interface JoinSessionResponse {
 }
 
 export type LobbyEvent =
-  | { type: 'PLAYER_JOINED'; sessionCode: string; timestamp: string; player: PlayerInfo }
+  | { type: 'PLAYER_JOINED'; sessionCode: string; timestamp: string; player: PlayerInfo; players: PlayerInfo[] }
   | { type: 'PLAYER_LEFT'; sessionCode: string; timestamp: string; playerId: string; username: string }
   | { type: 'PLAYER_KICKED'; sessionCode: string; timestamp: string; playerId: string; username: string }
   | { type: 'HOST_TRANSFERRED'; sessionCode: string; timestamp: string; newHostId: string; newHostUsername: string }
