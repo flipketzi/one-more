@@ -45,7 +45,7 @@ export const DiceCup: React.FC<Props> = ({ onReveal, onRevealComplete, revealing
     <div className="flex flex-col items-center gap-6">
       {/* Cup visual */}
       <motion.div
-        className="relative flex items-center justify-center"
+        style={{ width: 80, height: 80, position: 'relative' }}
         animate={
           revealing
             ? { y: '-120%', opacity: 0, scale: 0.8 }
@@ -60,12 +60,11 @@ export const DiceCup: React.FC<Props> = ({ onReveal, onRevealComplete, revealing
           if (revealing) onRevealComplete();
         }}
       >
-        {/* SVG ring around cup */}
+        {/* SVG ring centered around cup */}
         <svg
           width={80}
           height={80}
-          className="absolute"
-          style={{ transform: 'rotate(-90deg)' }}
+          style={{ position: 'absolute', inset: 0, transform: 'rotate(-90deg)' }}
         >
           <circle
             cx={40}
@@ -89,9 +88,11 @@ export const DiceCup: React.FC<Props> = ({ onReveal, onRevealComplete, revealing
           />
         </svg>
 
-        {/* Cup emoji */}
-        <div className="w-16 h-16 rounded-2xl glass flex items-center justify-center text-4xl shadow-xl border border-white/20">
-          🎲
+        {/* Cup emoji — centered in the 80x80 box */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-14 h-14 rounded-2xl glass flex items-center justify-center text-3xl shadow-xl border border-white/20">
+            🎲
+          </div>
         </div>
       </motion.div>
 
