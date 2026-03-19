@@ -77,7 +77,9 @@ export const useLobbyWebSocket = (sessionCode: string | null, token: string | nu
         case 'SESSION_STARTING':
           updateSession(prev => ({ ...prev, status: 'STARTING' }));
           setStartedGameType(event.gameType);
-          goTo(event.gameType === 'KINGS_CUP' ? 'kings_cup' : 'game_started');
+          if (event.gameType === 'KINGS_CUP') goTo('kings_cup');
+          else if (event.gameType === 'SCHOCKEN') goTo('schocken');
+          else goTo('game_started');
           break;
       }
     };

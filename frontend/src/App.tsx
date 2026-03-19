@@ -9,6 +9,7 @@ import { JoinScreen } from './screens/JoinScreen';
 import { LobbyScreen } from './screens/LobbyScreen';
 import { GameStartedScreen } from './screens/GameStartedScreen';
 import { KingsCupScreen } from './game/kingscup/screens/KingsCupScreen';
+import { SchockenScreen } from './game/schocken/screens/SchockenScreen';
 
 const SCREEN_TRANSITIONS = {
   initial: { opacity: 0, y: 16 },
@@ -59,6 +60,7 @@ const AppScreens: React.FC = () => {
         {screen === 'lobby'        && <motion.div key="lobby"        {...SCREEN_TRANSITIONS}><LobbyScreen /></motion.div>}
         {screen === 'game_started' && <motion.div key="game_started" {...SCREEN_TRANSITIONS}><GameStartedScreen /></motion.div>}
         {screen === 'kings_cup'   && <motion.div key="kings_cup"   {...SCREEN_TRANSITIONS}><KingsCupScreen /></motion.div>}
+        {screen === 'schocken'    && <motion.div key="schocken"    {...SCREEN_TRANSITIONS}><SchockenScreen /></motion.div>}
       </AnimatePresence>
     </>
   );

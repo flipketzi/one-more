@@ -2,7 +2,7 @@ export type PlayerRole = 'HOST' | 'PLAYER';
 export type PlayerStatus = 'ACTIVE' | 'LEFT' | 'KICKED';
 export type SessionStatus = 'WAITING' | 'STARTING' | 'IN_GAME' | 'FINISHED' | 'CANCELLED';
 export type GameType = 'KINGS_CUP' | 'HORSE_RACING' | 'SCHOCKEN';
-export type Screen = 'age_gate' | 'setup' | 'home' | 'join' | 'lobby' | 'game_started' | 'kings_cup';
+export type Screen = 'age_gate' | 'setup' | 'home' | 'join' | 'lobby' | 'game_started' | 'kings_cup' | 'schocken';
 
 export interface PlayerInfo {
   id: string;
