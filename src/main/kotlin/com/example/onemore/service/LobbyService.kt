@@ -15,6 +15,7 @@ import com.example.onemore.exception.ForbiddenException
 import com.example.onemore.exception.PlayerNotFoundException
 import com.example.onemore.exception.SessionNotFoundException
 import com.example.onemore.game.kingscup.service.KingsCupService
+import com.example.onemore.game.schocken.service.SchockenService
 import com.example.onemore.security.PlayerContext
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -29,7 +30,8 @@ class LobbyService(
     private val playerRepository: PlayerRepository,
     private val lobbyEventPublisher: LobbyEventPublisher,
     private val kingsCupService: KingsCupService,
-    private val gameEventPublisher: GameEventPublisher
+    private val gameEventPublisher: GameEventPublisher,
+    private val schockenService: SchockenService,
 ) {
 
     @Transactional
@@ -89,11 +91,14 @@ class LobbyService(
         session.updatedAt = Instant.now()
         sessionRepository.save(session)
 
-        if (session.gameType == GameType.KINGS_CUP) {
-            val players = playerRepository.findBySessionIdAndStatusOrderByJoinedAtAsc(
-                session.id, PlayerStatus.ACTIVE
-            )
-            kingsCupService.initializeGame(session, players)
+        val players = playerRepository.findBySessionIdAndStatusOrderByJoinedAtAsc(
+            session.id, PlayerStatus.ACTIVE
+        )
+
+        when (session.gameType) {
+            GameType.KINGS_CUP -> kingsCupService.initializeGame(session, players)
+            GameType.SCHOCKEN -> schockenService.initGame(session, players)
+            else -> Unit
         }
 
         val sessionCode = session.sessionCode
@@ -122,6 +127,7 @@ class LobbyService(
         sessionRepository.save(session)
 
         kingsCupService.abandonGame(session.id)
+        schockenService.removeGame(session.sessionCode)
 
         val sessionCode = session.sessionCode
         TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
