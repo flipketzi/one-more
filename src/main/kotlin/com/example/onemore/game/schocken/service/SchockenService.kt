@@ -125,7 +125,7 @@ class SchockenService(
             )
         )
 
-        checkRoundEnd(game)
+        advanceToNextPlayer(game)
         return hand.toDto()
     }
 
