@@ -1,24 +1,27 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { SchockenProvider, useSchocken } from '../context/SchockenContext';
+import { useGame } from '../../../context/GameContext';
+import { useSchockenGame } from '../hooks/useSchockenGame';
 import { DiceDisplay } from '../components/DiceDisplay';
 import { DiceCup } from '../components/DiceCup';
+import { HandLabel } from '../components/HandLabel';
+import { LidTracker } from '../components/LidTracker';
+import { GameOverOverlay } from '../overlays/GameOverOverlay';
 
 const SchockenScreenInner: React.FC = () => {
-  const { state, dispatch } = useSchocken();
-  const { phase, rollIndex, dice } = state;
+  const { session, player } = useGame();
+  const game = useSchockenGame(session!.code, player!.id);
 
-  // Advance from ROLLING to CUP_DOWN after 600ms
-  useEffect(() => {
-    if (phase !== 'ROLLING') return;
-    const id = setTimeout(() => dispatch({ type: 'ROLL_COMPLETE' }), 650);
-    return () => clearTimeout(id);
-  }, [phase]);
+  const isMyTurn = game.playerOrder[game.currentPlayerIdx]?.id === player!.id;
+  const showCup = game.phase === 'CUP_DOWN' || game.phase === 'REVEALING';
+  const showDice = game.phase === 'ROLLING' || game.phase === 'CUP_UP' || game.phase === 'FINISHED';
 
-  const showCup = phase === 'CUP_DOWN' || phase === 'REVEALING';
-  const showDice = phase === 'ROLLING' || phase === 'CUP_UP' || phase === 'FINISHED';
+  const maxRolls = game.maxRollsThisRound ?? 3;
+  const rollsRemaining = maxRolls - game.myRollIndex;
+  const canRollAgain = game.phase === 'CUP_UP' && isMyTurn && rollsRemaining > 0;
+  const mustReveal = game.phase === 'CUP_UP' && isMyTurn && rollsRemaining <= 0;
 
-  const canToggle = phase === 'CUP_UP' && rollIndex < 3;
+  const currentPlayer = game.playerOrder[game.currentPlayerIdx];
 
   return (
     <div className="app-bg min-h-dvh flex flex-col">
@@ -28,16 +31,30 @@ const SchockenScreenInner: React.FC = () => {
           <span className="text-xl">🎲</span>
           <span className="text-white font-black text-lg">Schocken</span>
         </div>
-        {rollIndex > 0 && (
+        {game.myRollIndex > 0 && (
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             className="px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-sm font-bold"
           >
-            Wurf {rollIndex}/3
+            Wurf {game.myRollIndex}/{maxRolls}
           </motion.div>
         )}
       </div>
+
+      {/* Lid tracker */}
+      <LidTracker
+        playerOrder={game.playerOrder}
+        lidStack={game.lidStack}
+        currentPlayerIdx={game.currentPlayerIdx}
+      />
+
+      {/* Turn indicator */}
+      {!isMyTurn && currentPlayer && (
+        <div className="px-4 py-2 text-center text-slate-400 text-sm">
+          Warten auf <span className="text-white font-semibold">{currentPlayer.username}</span>…
+        </div>
+      )}
 
       {/* Main area */}
       <div className="flex-1 flex flex-col items-center justify-center gap-8 px-4 py-6">
@@ -51,9 +68,9 @@ const SchockenScreenInner: React.FC = () => {
               transition={{ duration: 0.3, ease: 'easeOut' }}
             >
               <DiceCup
-                revealing={phase === 'REVEALING'}
-                onReveal={() => dispatch({ type: 'START_REVEAL' })}
-                onRevealComplete={() => dispatch({ type: 'REVEAL_COMPLETE' })}
+                revealing={game.phase === 'REVEALING'}
+                onReveal={game.reveal}
+                onRevealComplete={game.onRevealComplete}
               />
             </motion.div>
           )}
@@ -67,16 +84,17 @@ const SchockenScreenInner: React.FC = () => {
               className="flex flex-col items-center gap-4"
             >
               <DiceDisplay
-                dice={dice}
-                rolling={phase === 'ROLLING'}
-                canToggle={canToggle}
-                onToggle={id => dispatch({ type: 'TOGGLE_KEPT', dieId: id })}
+                dice={game.myDice}
+                rolling={game.phase === 'ROLLING'}
+                canToggle={canRollAgain}
+                onToggle={game.toggleKeep}
               />
-              {canToggle && (
+              {canRollAgain && (
                 <p className="text-slate-400 text-xs">
                   Tippe auf einen Würfel zum Beiseitelegen
                 </p>
               )}
+              {game.myHand && <HandLabel hand={game.myHand} />}
             </motion.div>
           )}
         </AnimatePresence>
@@ -84,46 +102,82 @@ const SchockenScreenInner: React.FC = () => {
 
       {/* Bottom action area */}
       <div className="px-4 pb-safe-bottom pb-8 pt-4 border-t border-white/10 flex flex-col items-center gap-3">
-        {/* Roll button — shown when idle or cup up with rolls remaining */}
-        {(phase === 'IDLE' || (phase === 'CUP_UP' && rollIndex < 3)) && (
+        {/* IDLE: first roll */}
+        {game.phase === 'IDLE' && isMyTurn && (
           <motion.button
             key="roll-btn"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => dispatch({ type: 'START_ROLL' })}
+            onClick={game.roll}
             className="w-full max-w-xs py-4 rounded-2xl bg-amber-500 text-slate-900 font-black text-lg shadow-lg"
           >
-            {phase === 'IDLE' ? 'Würfeln' : 'Nochmal würfeln'}
+            Würfeln
           </motion.button>
         )}
 
+        {/* CUP_UP: roll again or stand */}
+        {canRollAgain && (
+          <div className="flex flex-col gap-2 w-full max-w-xs">
+            <motion.button
+              key="reroll-btn"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={game.roll}
+              className="w-full py-4 rounded-2xl bg-amber-500 text-slate-900 font-black text-lg shadow-lg"
+            >
+              Nochmal würfeln
+            </motion.button>
+            <motion.button
+              key="stand-btn"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={game.stand}
+              className="w-full py-3 rounded-2xl glass border border-white/20 text-white font-bold text-base"
+            >
+              Stehen lassen
+            </motion.button>
+          </div>
+        )}
+
+        {/* CUP_UP: forced reveal after max rolls */}
+        {mustReveal && (
+          <p className="text-slate-400 text-sm">Hebe den Becher auf um deine Hand aufzudecken</p>
+        )}
+
         {/* Rolling indicator */}
-        {phase === 'ROLLING' && (
+        {game.phase === 'ROLLING' && (
           <div className="w-full max-w-xs py-4 rounded-2xl bg-amber-500/20 border border-amber-500/30 text-amber-300 font-bold text-lg text-center">
             ...
           </div>
         )}
 
-        {/* After 3rd roll: Alle fertig? (disabled) */}
-        {(phase === 'FINISHED' || (phase === 'CUP_UP' && rollIndex >= 3)) && (
-          <motion.button
-            key="finished-btn"
+        {/* FINISHED: waiting for next player event */}
+        {game.phase === 'FINISHED' && (
+          <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            disabled
-            className="w-full max-w-xs py-4 rounded-2xl glass border border-white/10 text-white/40 font-bold text-lg cursor-not-allowed"
+            className="w-full max-w-xs py-4 rounded-2xl glass border border-white/10 text-white/40 font-bold text-lg text-center"
           >
-            Alle fertig?
-          </motion.button>
+            Warten auf andere Spieler…
+          </motion.div>
+        )}
+
+        {/* Not your turn */}
+        {game.phase === 'IDLE' && !isMyTurn && (
+          <div className="w-full max-w-xs py-4 rounded-2xl glass border border-white/10 text-white/30 font-bold text-lg text-center">
+            {currentPlayer ? `Warten auf ${currentPlayer.username}…` : 'Warten…'}
+          </div>
         )}
       </div>
+
+      {game.gameOver && game.loserPlayerId && (
+        <GameOverOverlay loserPlayerId={game.loserPlayerId} players={game.playerOrder} />
+      )}
     </div>
   );
 };
 
-export const SchockenScreen: React.FC = () => (
-  <SchockenProvider>
-    <SchockenScreenInner />
-  </SchockenProvider>
-);
+export const SchockenScreen: React.FC = () => <SchockenScreenInner />;
