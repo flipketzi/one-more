@@ -330,6 +330,34 @@ describe('useSchockenGame', () => {
     expect(bob.lids).toBe(4)
   })
 
+  it('NEXT_PLAYER with playerOrderIds reorders playerOrder and resets state for the new first player', () => {
+    const { result } = renderHook(() => useSchockenGame(CODE, PLAYER_ID))
+    connectWs()
+
+    // Start: p2 is index 0, PLAYER_ID is index 1
+    fireWsEvent({
+      type: 'GAME_STARTED',
+      playerOrder: [makePlayer('p2', 'Bob'), makePlayer(PLAYER_ID, 'Alice')],
+      lidStack: 13,
+      playerLids: {},
+      currentPlayerIdx: 0,
+    })
+
+    // Round ends, backend rotates: PLAYER_ID becomes index 0 (loser starts)
+    fireWsEvent({
+      type: 'NEXT_PLAYER',
+      currentPlayerIdx: 0,
+      maxRollsThisRound: null,
+      playerOrderIds: [PLAYER_ID, 'p2'],
+    })
+
+    // playerOrder must now have PLAYER_ID first
+    expect(result.current.playerOrder[0].id).toBe(PLAYER_ID)
+    expect(result.current.playerOrder[1].id).toBe('p2')
+    // And since PLAYER_ID is at index 0 = currentPlayerIdx, phase resets to IDLE
+    expect(result.current.phase).toBe('IDLE')
+  })
+
   it('NEXT_PLAYER resets own state when it is our turn', () => {
     const { result } = renderHook(() => useSchockenGame(CODE, PLAYER_ID))
     connectWs()

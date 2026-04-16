@@ -217,11 +217,24 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
       case 'NEXT_PLAYER': {
         const ci = event.currentPlayerIdx as number;
         const mr = event.maxRollsThisRound as number | null;
-        const nextPlayer = playerOrderRef.current[ci];
+        const newOrderIds = event.playerOrderIds as string[] | null | undefined;
+
+        // At round start the backend rotates playerOrder (loser first).
+        // playerOrderIds carries the new ordering so we stay in sync.
+        if (newOrderIds) {
+          setPlayerOrder(prev => {
+            const map = new Map(prev.map(p => [p.id, p]));
+            return newOrderIds.map(id => map.get(id)).filter((p): p is typeof prev[number] => p != null);
+          });
+        }
+
+        // Derive the next player's id directly from the event so we don't
+        // depend on the playerOrderRef (which may still hold a stale value
+        // from before the setPlayerOrder call above lands).
+        const nextPlayerId = newOrderIds ? newOrderIds[ci] : playerOrderRef.current[ci]?.id;
         setCurrentPlayerIdx(ci);
         setMaxRollsThisRound(mr ?? null);
-        // Reset own state if it's now our turn again
-        if (nextPlayer?.id === playerId) {
+        if (nextPlayerId === playerId) {
           setPhase('IDLE');
           setMyDice([]);
           setMyRollIndex(0);
