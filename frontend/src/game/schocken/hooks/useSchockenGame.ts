@@ -337,23 +337,31 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
 
   // Called explicitly by the player when they want to broadcast their hand to everyone.
   const revealToAll = useCallback(async () => {
+    // Optimistic: hide the "must reveal" button immediately. Same rationale as
+    // revealCup — the HTTP response can arrive after ROUND_ENDED has already
+    // reset phase to IDLE, which would re-lock the player in FINISHED state.
+    setPhase('FINISHED');
     try {
-      const hand = await revealHand(sessionCode);
-      setMyHand(hand);
-      setPhase('FINISHED');
+      await revealHand(sessionCode);
+      // hand arrives via the PLAYER_REVEALED WebSocket event — nothing to do here
     } catch {
-      // stay in CUP_UP
+      setPhase('CUP_UP'); // revert so the player can try again
     }
   }, [sessionCode]);
 
   // Called during the reveal phase when it's your turn to lift your cup for everyone.
   const revealCup = useCallback(async () => {
+    // Optimistically hide the cup immediately so the reveal animation doesn't
+    // linger while waiting for the HTTP round-trip. Phase will be corrected
+    // by the NEXT_REVEALER or ROUND_ENDED WebSocket event; setting it here
+    // before the await prevents the race where the HTTP response arrives after
+    // ROUND_ENDED has already reset phase to IDLE (which would re-lock the UI).
+    setPhase('FINISHED');
     try {
-      const hand = await revealHand(sessionCode);
-      setMyHand(hand);
-      setPhase('FINISHED');
+      await revealHand(sessionCode);
+      // hand arrives via the PLAYER_REVEALED WebSocket event — nothing to do here
     } catch {
-      // stay in REVEALING
+      setPhase('CUP_DOWN'); // revert so the player can try again
     }
   }, [sessionCode]);
 
