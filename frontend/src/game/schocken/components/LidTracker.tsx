@@ -8,6 +8,13 @@ interface Props {
   currentPlayerIdx: number;
 }
 
+function handBadgeColor(rank: number): string {
+  if (rank >= 9000) return 'bg-amber-500/20 border-amber-500/50 text-amber-300';
+  if (rank >= 8000) return 'bg-violet-500/20 border-violet-500/50 text-violet-300';
+  if (rank >= 7100) return 'bg-blue-500/20 border-blue-500/50 text-blue-300';
+  return 'bg-slate-500/20 border-slate-500/30 text-slate-300';
+}
+
 export const LidTracker: React.FC<Props> = ({ playerOrder, lidStack, currentPlayerIdx }) => {
   return (
     <div className="px-4 py-2 border-b border-white/10 overflow-x-auto">
@@ -25,6 +32,7 @@ export const LidTracker: React.FC<Props> = ({ playerOrder, lidStack, currentPlay
         {playerOrder.map((player, idx) => {
           const isActive = idx === currentPlayerIdx;
           const isEliminated = player.lids === 0 && idx !== currentPlayerIdx;
+          const keptCount = player.dice?.filter(d => d.kept).length ?? 0;
 
           return (
             <div
@@ -40,8 +48,20 @@ export const LidTracker: React.FC<Props> = ({ playerOrder, lidStack, currentPlay
               </div>
               <span className="text-white text-xs font-bold truncate max-w-[56px]">{player.username}</span>
               <span className={`text-xs font-black ${isActive ? 'text-amber-300' : 'text-slate-300'}`}>
-                {player.lids} {player.lids === 1 ? 'Deckel' : 'Deckel'}
+                {player.lids} Deckel
               </span>
+
+              {/* Status badge */}
+              {player.revealed && player.hand && (
+                <span className={`text-xs px-1.5 py-0.5 rounded-full border font-semibold ${handBadgeColor(player.hand.rank)}`}>
+                  {player.hand.name}
+                </span>
+              )}
+              {(player.standing || player.closed) && !player.revealed && (
+                <span className="text-xs text-slate-500">
+                  {keptCount > 0 ? `🎲×${keptCount}` : '🫙'}
+                </span>
+              )}
             </div>
           );
         })}

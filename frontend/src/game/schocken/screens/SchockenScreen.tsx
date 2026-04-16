@@ -8,13 +8,15 @@ import { HandLabel } from '../components/HandLabel';
 import { LidTracker } from '../components/LidTracker';
 import { GameOverOverlay } from '../overlays/GameOverOverlay';
 import { RoundEndedOverlay } from '../overlays/RoundEndedOverlay';
+import { RevealPhaseOverlay } from '../overlays/RevealPhaseOverlay';
 
 const SchockenScreenInner: React.FC = () => {
   const { session, player } = useGame();
   const game = useSchockenGame(session!.code, player!.id);
 
   const isMyTurn = game.playerOrder[game.currentPlayerIdx]?.id === player!.id;
-  const showCup = game.phase === 'CUP_DOWN' || game.phase === 'REVEALING';
+  // During the reveal phase the overlay takes over — hide the main cup to avoid duplicate input
+  const showCup = (game.phase === 'CUP_DOWN' || game.phase === 'REVEALING') && game.gamePhase !== 'REVEAL_PHASE';
   const showDice = game.phase === 'ROLLING' || game.phase === 'CUP_UP' || game.phase === 'FINISHED';
 
   const maxRolls = game.maxRollsThisRound ?? 3;
@@ -184,6 +186,20 @@ const SchockenScreenInner: React.FC = () => {
       </div>
 
       <RoundEndedOverlay roundResult={game.roundResult} />
+
+      <AnimatePresence>
+        {game.gamePhase === 'REVEAL_PHASE' && (
+          <RevealPhaseOverlay
+            playerOrder={game.playerOrder}
+            revealQueue={game.revealQueue}
+            currentRevealerId={game.currentRevealerId}
+            playerId={player!.id}
+            myPhase={game.phase}
+            onReveal={game.reveal}
+            revealCup={game.revealCup}
+          />
+        )}
+      </AnimatePresence>
 
       {game.gameOver && game.loserPlayerId && (
         <GameOverOverlay loserPlayerId={game.loserPlayerId} players={game.playerOrder} />
