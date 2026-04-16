@@ -281,19 +281,22 @@ class SchockenService(
             game.gameOver = true
             publisher.publish(game.sessionCode, GameOverEvent(loserPlayerId = loser.id.toString()))
         } else {
-            startNewRound(game, activePlayers2)
+            startNewRound(game, activePlayers2, starterPlayerId = loserIds.first())
         }
     }
 
-    private fun startNewRound(game: SchockenGameState, activePlayers: List<SchockenPlayerInfo>) {
-        // Reset turns for active players
+    private fun startNewRound(game: SchockenGameState, activePlayers: List<SchockenPlayerInfo>, starterPlayerId: UUID) {
         game.turns.clear()
         game.playerOrder.clear()
-        game.playerOrder.addAll(activePlayers)
-        game.currentPlayerIdx = 0
         game.maxRollsThisRound = null
+        game.currentPlayerIdx = 0
 
-        activePlayers.forEachIndexed { idx, info ->
+        // Rotate player list so the round loser is always first (preserves existing index-based logic)
+        val starterIdx = activePlayers.indexOfFirst { it.id == starterPlayerId }.coerceAtLeast(0)
+        val rotated = activePlayers.drop(starterIdx) + activePlayers.take(starterIdx)
+        game.playerOrder.addAll(rotated)
+
+        rotated.forEachIndexed { idx, info ->
             game.turns[info.id] = PlayerTurn(playerId = info.id, playerOrder = idx)
         }
 
