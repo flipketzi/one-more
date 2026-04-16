@@ -12,6 +12,7 @@ function makePlayer(overrides: Partial<PublicPlayerState> = {}): PublicPlayerSta
     rollIndex: 0,
     revealed: false,
     standing: false,
+    closed: false,
     hand: null,
     dice: null,
     ...overrides,

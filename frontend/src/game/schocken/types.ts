@@ -20,6 +20,7 @@ export interface PublicPlayerState {
   rollIndex: number;
   revealed: boolean;
   standing: boolean;
+  closed: boolean;
   hand: HandResult | null;
   dice: Die[] | null;
 }
