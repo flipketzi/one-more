@@ -195,6 +195,8 @@ const SchockenScreenInner: React.FC = () => {
             currentRevealerId={game.currentRevealerId}
             playerId={player!.id}
             myPhase={game.phase}
+            myDice={game.myDice}
+            myHand={game.myHand}
             onReveal={game.reveal}
             revealCup={game.revealCup}
           />
