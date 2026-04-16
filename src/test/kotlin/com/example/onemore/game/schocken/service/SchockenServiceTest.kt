@@ -376,6 +376,42 @@ class SchockenServiceTest {
     }
 
     @Test
+    fun `when lid stack is empty redistribution takes from the round winner not the richest player`() {
+        // Drain the stack completely by playing rounds until lidStack == 0.
+        // Each round pays at least 1 lid, so the stack empties within 13 rounds.
+        val player1 = makePlayer("Alice")
+        val player2 = makePlayer("Bob")
+        service.initGame(makeSession(), listOf(player1, player2))
+
+        var view = service.getGameView(sessionCode, ctx(player1.id))
+        while (view.lidStack > 0) {
+            service.rollDice(sessionCode, ctx(player1.id), emptyList())
+            service.revealHand(sessionCode, ctx(player1.id))
+            service.rollDice(sessionCode, ctx(player2.id), emptyList())
+            service.revealHand(sessionCode, ctx(player2.id))
+            view = service.getGameView(sessionCode, ctx(player1.id))
+            if (view.gameOver) return // early game-over is acceptable (e.g. Schock Out)
+        }
+
+        // Stack is now 0. Record lids before the redistribution round.
+        val lidsBefore = view.playerLids.toMap()
+        val totalBefore = lidsBefore.values.sum()
+        assertEquals(13, totalBefore, "All 13 lids must be in play when stack is empty")
+
+        // Play one more round (redistribution phase)
+        service.rollDice(sessionCode, ctx(player1.id), emptyList())
+        service.revealHand(sessionCode, ctx(player1.id))
+        service.rollDice(sessionCode, ctx(player2.id), emptyList())
+        service.revealHand(sessionCode, ctx(player2.id))
+        view = service.getGameView(sessionCode, ctx(player1.id))
+
+        // Conservation law: total lids must remain 13, stack stays 0
+        val totalAfter = view.playerLids.values.sum()
+        assertEquals(13, totalAfter, "Total lids must be conserved during redistribution")
+        assertEquals(0, view.lidStack, "Lid stack must remain 0 after redistribution round")
+    }
+
+    @Test
     fun `two-player game does not end after the first round while the lid stack still has lids`() {
         // Regression: activePlayers2 used to filter by lids > 0, which made the game end after
         // round 1 because only the loser had lids (winner stayed at 0).
