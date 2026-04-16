@@ -232,11 +232,11 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
 
         setLidStack(ls);
         setPlayerLids(pl);
-        // Filter eliminated players and reset per-player state for the new round
+        // Filter eliminated players, update lid counts, and reset per-player state for the new round
         setPlayerOrder(prev =>
           prev
             .filter(p => activePlayerIds.includes(p.id))
-            .map(p => ({ ...p, revealed: false, standing: false, hand: null, dice: null, rollIndex: 0 }))
+            .map(p => ({ ...p, lids: pl[p.id] ?? p.lids, revealed: false, standing: false, hand: null, dice: null, rollIndex: 0 }))
         );
         // Reset own state for new round
         setPhase('IDLE');

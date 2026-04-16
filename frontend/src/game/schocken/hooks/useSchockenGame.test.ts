@@ -297,6 +297,37 @@ describe('useSchockenGame', () => {
     expect(bob.rollIndex).toBe(0)
   })
 
+  it('ROUND_ENDED updates lids on each player in playerOrder', () => {
+    const { result } = renderHook(() => useSchockenGame(CODE, PLAYER_ID))
+    connectWs()
+
+    fireWsEvent({
+      type: 'GAME_STARTED',
+      playerOrder: [makePlayer(PLAYER_ID, 'Alice'), makePlayer('p2', 'Bob')],
+      lidStack: 13,
+      playerLids: { [PLAYER_ID]: 0, p2: 0 },
+      currentPlayerIdx: 0,
+    })
+
+    // Initially both players have 0 lids
+    expect(result.current.playerOrder[0].lids).toBe(0)
+    expect(result.current.playerOrder[1].lids).toBe(0)
+
+    fireWsEvent({
+      type: 'ROUND_ENDED',
+      loserIds: ['p2'],
+      lidValue: 4,
+      lidStack: 9,
+      playerLids: { [PLAYER_ID]: 0, p2: 4 },
+      activePlayerIds: [PLAYER_ID, 'p2'],
+    })
+
+    // Bob took 4 lids — his lids field in playerOrder must reflect this
+    const [alice, bob] = result.current.playerOrder
+    expect(alice.lids).toBe(0)
+    expect(bob.lids).toBe(4)
+  })
+
   it('NEXT_PLAYER resets own state when it is our turn', () => {
     const { result } = renderHook(() => useSchockenGame(CODE, PLAYER_ID))
     connectWs()
