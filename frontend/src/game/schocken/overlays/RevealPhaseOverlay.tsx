@@ -130,9 +130,22 @@ export const RevealPhaseOverlay: React.FC<Props> = ({
                     visible: { opacity: 1, y: 0 },
                   }}
                   transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                  className={`px-3 py-1.5 rounded-full border text-xs font-bold ${handBadgeColor(p.hand!.rank)}`}
+                  className={`flex flex-col gap-1 px-3 py-2 rounded-xl border ${handBadgeColor(p.hand!.rank)}`}
                 >
-                  {p.username}: {p.hand!.name}
+                  <span className="text-xs font-semibold opacity-70">{p.username}</span>
+                  {p.dice && p.dice.length > 0 && (
+                    <div className="flex gap-1">
+                      {[...p.dice].sort((a, b) => b.value - a.value).map(d => (
+                        <span
+                          key={d.id}
+                          className="w-6 h-6 flex items-center justify-center rounded bg-black/30 text-xs font-black"
+                        >
+                          {d.value}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <span className="text-xs font-bold">{p.hand!.name}</span>
                 </motion.div>
               ))}
             </AnimatePresence>
