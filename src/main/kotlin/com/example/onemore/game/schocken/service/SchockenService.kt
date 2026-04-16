@@ -225,8 +225,6 @@ class SchockenService(
     }
 
     private fun checkRoundEnd(game: SchockenGameState) {
-        val activePlayers = game.playerOrder.filter { it.lids > 0 || game.turns[it.id]?.rollCount == 0 }
-
         val allDone = game.turns.values.all { it.revealed || it.standing }
         if (!allDone) return
 
@@ -239,6 +237,8 @@ class SchockenService(
         val lidValue = winnerHand.lids
 
         val loserIds = turnsWithHands.filter { it.hand!!.rank == minRank }.map { it.playerId }
+        val winnerId = turnsWithHands.first { it.hand!!.rank == maxRank }.playerId
+        val winnerInfo = game.playerOrder.first { it.id == winnerId }
 
         // Distribute lids to losers
         loserIds.forEach { loserId ->
@@ -248,11 +248,10 @@ class SchockenService(
                 loserInfo.lids += taken
                 game.lidStack -= taken
             } else {
-                // Take from player with most lids
-                val richest = game.playerOrder.filter { it.id != loserId }.maxByOrNull { it.lids }
-                if (richest != null && richest.lids > 0) {
-                    val taken = minOf(lidValue, richest.lids)
-                    richest.lids -= taken
+                // Stack empty: the round winner gives their lids to the loser
+                if (winnerInfo.id != loserId && winnerInfo.lids > 0) {
+                    val taken = minOf(lidValue, winnerInfo.lids)
+                    winnerInfo.lids -= taken
                     loserInfo.lids += taken
                 }
             }
