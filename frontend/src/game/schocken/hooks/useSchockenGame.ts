@@ -5,6 +5,12 @@ import { Die, HandResult, PublicPlayerState, RollPhase } from '../types';
 import { rollDice, revealHand, standPlayer, getSchockenState } from '../api/schockenApi';
 import { useGame } from '../../../context/GameContext';
 
+export interface RoundResult {
+  loserName: string;
+  winnerHandName: string;
+  lidValue: number;
+}
+
 export interface SchockenGameHook {
   // Local UI state (own dice)
   myDice: Die[];
@@ -21,6 +27,7 @@ export interface SchockenGameHook {
   playerLids: Record<string, number>;
   gameOver: boolean;
   loserPlayerId: string | null;
+  roundResult: RoundResult | null;
 
   // Actions
   toggleKeep: (dieId: number) => void;
@@ -49,8 +56,23 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
   const [playerLids, setPlayerLids] = useState<Record<string, number>>({});
   const [gameOver, setGameOver] = useState(false);
   const [loserPlayerId, setLoserPlayerId] = useState<string | null>(null);
+  const [roundResult, setRoundResult] = useState<RoundResult | null>(null);
 
   const clientRef = useRef<Client | null>(null);
+  // Always-current snapshot of playerOrder, safe to read inside stale WS closures
+  const playerOrderRef = useRef<PublicPlayerState[]>([]);
+
+  // Keep ref in sync so WS event handlers can always read current playerOrder
+  useEffect(() => {
+    playerOrderRef.current = playerOrder;
+  }, [playerOrder]);
+
+  // Auto-dismiss round result after 3 seconds
+  useEffect(() => {
+    if (!roundResult) return;
+    const timer = setTimeout(() => setRoundResult(null), 3000);
+    return () => clearTimeout(timer);
+  }, [roundResult]);
 
   // Load initial state on mount
   useEffect(() => {
@@ -191,6 +213,26 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
         const ls = event.lidStack as number;
         const pl = event.playerLids as Record<string, number>;
         const activePlayerIds = event.activePlayerIds as string[];
+        const loserIds = event.loserIds as string[];
+        const lidValue = event.lidValue as number;
+
+        // Compute round result from the ref (always current, safe in stale closure)
+        const prev = playerOrderRef.current;
+        const losers = prev.filter(p => loserIds.includes(p.id));
+        const winner = prev
+          .filter(p => p.hand != null)
+          .reduce<PublicPlayerState | null>(
+            (best, p) => (!best || p.hand!.rank > best.hand!.rank) ? p : best,
+            null
+          );
+        if (losers.length > 0 && winner) {
+          setRoundResult({
+            loserName: losers.map(p => p.username).join(' & '),
+            winnerHandName: winner.hand!.name,
+            lidValue,
+          });
+        }
+
         setLidStack(ls);
         setPlayerLids(pl);
         setPlayerOrder(prev => prev.filter(p => activePlayerIds.includes(p.id)));
@@ -280,6 +322,7 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
     playerLids,
     gameOver,
     loserPlayerId,
+    roundResult,
     toggleKeep,
     roll,
     reveal,

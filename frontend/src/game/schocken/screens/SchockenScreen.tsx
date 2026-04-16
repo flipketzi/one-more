@@ -7,6 +7,7 @@ import { DiceCup } from '../components/DiceCup';
 import { HandLabel } from '../components/HandLabel';
 import { LidTracker } from '../components/LidTracker';
 import { GameOverOverlay } from '../overlays/GameOverOverlay';
+import { RoundEndedOverlay } from '../overlays/RoundEndedOverlay';
 
 const SchockenScreenInner: React.FC = () => {
   const { session, player } = useGame();
@@ -181,6 +182,8 @@ const SchockenScreenInner: React.FC = () => {
           </div>
         )}
       </div>
+
+      <RoundEndedOverlay roundResult={game.roundResult} />
 
       {game.gameOver && game.loserPlayerId && (
         <GameOverOverlay loserPlayerId={game.loserPlayerId} players={game.playerOrder} />
