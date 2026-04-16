@@ -242,6 +242,61 @@ describe('useSchockenGame', () => {
     expect(result.current.roundResult?.lidValue).toBe(3)
   })
 
+  it('ROUND_ENDED resets revealed/standing/hand/dice/rollIndex on all players in playerOrder', () => {
+    const { result } = renderHook(() => useSchockenGame(CODE, PLAYER_ID))
+    connectWs()
+
+    // Start with players
+    fireWsEvent({
+      type: 'GAME_STARTED',
+      playerOrder: [makePlayer(PLAYER_ID, 'Alice'), makePlayer('p2', 'Bob')],
+      lidStack: 13,
+      playerLids: { [PLAYER_ID]: 0, p2: 0 },
+      currentPlayerIdx: 0,
+    })
+
+    // Simulate both players having revealed their hands
+    fireWsEvent({
+      type: 'PLAYER_REVEALED',
+      playerId: PLAYER_ID,
+      dice: [{ id: 0, value: 3, kept: false }],
+      hand: { name: 'Schock 4', lids: 4, rank: 9040 },
+    })
+    fireWsEvent({
+      type: 'PLAYER_REVEALED',
+      playerId: 'p2',
+      dice: [{ id: 0, value: 1, kept: false }],
+      hand: { name: '3-2-1', lids: 1, rank: 321 },
+    })
+
+    // Verify stale state is present before ROUND_ENDED
+    expect(result.current.playerOrder[0].revealed).toBe(true)
+    expect(result.current.playerOrder[1].revealed).toBe(true)
+
+    // Round ends — both players remain active
+    fireWsEvent({
+      type: 'ROUND_ENDED',
+      loserIds: ['p2'],
+      lidValue: 4,
+      lidStack: 9,
+      playerLids: { [PLAYER_ID]: 0, p2: 4 },
+      activePlayerIds: [PLAYER_ID, 'p2'],
+    })
+
+    // All per-player fields must be reset for the new round
+    const [alice, bob] = result.current.playerOrder
+    expect(alice.revealed).toBe(false)
+    expect(alice.standing).toBe(false)
+    expect(alice.hand).toBeNull()
+    expect(alice.dice).toBeNull()
+    expect(alice.rollIndex).toBe(0)
+    expect(bob.revealed).toBe(false)
+    expect(bob.standing).toBe(false)
+    expect(bob.hand).toBeNull()
+    expect(bob.dice).toBeNull()
+    expect(bob.rollIndex).toBe(0)
+  })
+
   it('NEXT_PLAYER resets own state when it is our turn', () => {
     const { result } = renderHook(() => useSchockenGame(CODE, PLAYER_ID))
     connectWs()
