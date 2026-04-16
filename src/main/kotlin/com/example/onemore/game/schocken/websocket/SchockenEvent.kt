@@ -36,8 +36,17 @@ class PlayerRevealedEvent(
 
 class PlayerStoodEvent(
     val playerId: String,
-    val hand: HandResultDto,
+    // hand omitted — remains hidden until the reveal phase
 ) : SchockenEvent("PLAYER_STOOD")
+
+class RevealPhaseStartedEvent(
+    val orderedRevealerIds: List<String>,
+    val currentRevealerId: String,
+) : SchockenEvent("REVEAL_PHASE_STARTED")
+
+class NextRevealerEvent(
+    val currentRevealerId: String,
+) : SchockenEvent("NEXT_REVEALER")
 
 class NextPlayerEvent(
     val currentPlayerIdx: Int,
