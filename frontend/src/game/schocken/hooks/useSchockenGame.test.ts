@@ -45,7 +45,7 @@ function makePlayer(id: string, username: string) {
   return {
     id, username, avatar: 'avatar_beer',
     lids: 0, rollIndex: 0,
-    revealed: false, standing: false,
+    revealed: false, standing: false, closed: false,
     hand: null, dice: null,
   }
 }
@@ -287,11 +287,13 @@ describe('useSchockenGame', () => {
     const [alice, bob] = result.current.playerOrder
     expect(alice.revealed).toBe(false)
     expect(alice.standing).toBe(false)
+    expect(alice.closed).toBe(false)
     expect(alice.hand).toBeNull()
     expect(alice.dice).toBeNull()
     expect(alice.rollIndex).toBe(0)
     expect(bob.revealed).toBe(false)
     expect(bob.standing).toBe(false)
+    expect(bob.closed).toBe(false)
     expect(bob.hand).toBeNull()
     expect(bob.dice).toBeNull()
     expect(bob.rollIndex).toBe(0)
@@ -372,5 +374,139 @@ describe('useSchockenGame', () => {
     // Our phase should still be REVEALING (not reset)
     expect(result.current.phase).toBe('REVEALING')
     expect(result.current.currentPlayerIdx).toBe(1)
+  })
+
+  // ── Aufdeckphase events ────────────────────────────────────────────────────
+
+  it('PLAYER_STOOD sets standing to true without setting hand on the player', () => {
+    const { result } = renderHook(() => useSchockenGame(CODE, PLAYER_ID))
+    connectWs()
+
+    fireWsEvent({
+      type: 'GAME_STARTED',
+      playerOrder: [makePlayer(PLAYER_ID, 'Alice'), makePlayer('p2', 'Bob')],
+      lidStack: 13,
+      playerLids: {},
+      currentPlayerIdx: 0,
+    })
+
+    fireWsEvent({ type: 'PLAYER_STOOD', playerId: PLAYER_ID })
+
+    const alice = result.current.playerOrder[0]
+    expect(alice.standing).toBe(true)
+    expect(alice.hand).toBeNull()
+  })
+
+  it('roll() at max rolls (rollIndex >= maxRolls) sets phase to FINISHED', async () => {
+    // Simulate a max-rolls roll: server returns rollIndex === 3 (default maxRolls)
+    mockRollDice.mockResolvedValue({ dice: [], rollIndex: 3 })
+
+    const { result } = renderHook(() => useSchockenGame(CODE, PLAYER_ID))
+    await act(async () => { await result.current.roll() })
+
+    expect(result.current.phase).toBe('FINISHED')
+  })
+
+  it('REVEAL_PHASE_STARTED activates reveal phase and populates revealQueue', () => {
+    const { result } = renderHook(() => useSchockenGame(CODE, PLAYER_ID))
+    connectWs()
+
+    fireWsEvent({
+      type: 'GAME_STARTED',
+      playerOrder: [makePlayer(PLAYER_ID, 'Alice'), makePlayer('p2', 'Bob')],
+      lidStack: 13,
+      playerLids: {},
+      currentPlayerIdx: 0,
+    })
+
+    fireWsEvent({
+      type: 'REVEAL_PHASE_STARTED',
+      orderedRevealerIds: ['p2', PLAYER_ID],
+      currentRevealerId: 'p2',
+    })
+
+    expect(result.current.gamePhase).toBe('REVEAL_PHASE')
+    expect(result.current.revealQueue).toEqual(['p2', PLAYER_ID])
+    expect(result.current.currentRevealerId).toBe('p2')
+  })
+
+  it('REVEAL_PHASE_STARTED sets phase to CUP_DOWN when local player is first in queue', () => {
+    const { result } = renderHook(() => useSchockenGame(CODE, PLAYER_ID))
+    connectWs()
+
+    fireWsEvent({
+      type: 'GAME_STARTED',
+      playerOrder: [makePlayer(PLAYER_ID, 'Alice'), makePlayer('p2', 'Bob')],
+      lidStack: 13,
+      playerLids: {},
+      currentPlayerIdx: 0,
+    })
+
+    fireWsEvent({
+      type: 'REVEAL_PHASE_STARTED',
+      orderedRevealerIds: [PLAYER_ID, 'p2'],
+      currentRevealerId: PLAYER_ID,
+    })
+
+    expect(result.current.phase).toBe('CUP_DOWN')
+  })
+
+  it('NEXT_REVEALER advances the revealQueue and sets phase to CUP_DOWN when it is our turn', () => {
+    const { result } = renderHook(() => useSchockenGame(CODE, PLAYER_ID))
+    connectWs()
+
+    fireWsEvent({
+      type: 'GAME_STARTED',
+      playerOrder: [makePlayer(PLAYER_ID, 'Alice'), makePlayer('p2', 'Bob')],
+      lidStack: 13,
+      playerLids: {},
+      currentPlayerIdx: 0,
+    })
+
+    // Reveal phase with p2 going first, then us
+    fireWsEvent({
+      type: 'REVEAL_PHASE_STARTED',
+      orderedRevealerIds: ['p2', PLAYER_ID],
+      currentRevealerId: 'p2',
+    })
+
+    // p2 finishes → NEXT_REVEALER points to us
+    fireWsEvent({ type: 'NEXT_REVEALER', currentRevealerId: PLAYER_ID })
+
+    expect(result.current.revealQueue).toEqual([PLAYER_ID])
+    expect(result.current.currentRevealerId).toBe(PLAYER_ID)
+    expect(result.current.phase).toBe('CUP_DOWN')
+  })
+
+  it('ROUND_ENDED resets gamePhase and revealQueue', () => {
+    const { result } = renderHook(() => useSchockenGame(CODE, PLAYER_ID))
+    connectWs()
+
+    fireWsEvent({
+      type: 'GAME_STARTED',
+      playerOrder: [makePlayer(PLAYER_ID, 'Alice'), makePlayer('p2', 'Bob')],
+      lidStack: 13,
+      playerLids: { [PLAYER_ID]: 0, p2: 0 },
+      currentPlayerIdx: 0,
+    })
+
+    fireWsEvent({
+      type: 'REVEAL_PHASE_STARTED',
+      orderedRevealerIds: [PLAYER_ID, 'p2'],
+      currentRevealerId: PLAYER_ID,
+    })
+    expect(result.current.gamePhase).toBe('REVEAL_PHASE')
+
+    fireWsEvent({
+      type: 'ROUND_ENDED',
+      loserIds: ['p2'],
+      lidValue: 2,
+      lidStack: 11,
+      playerLids: { [PLAYER_ID]: 0, p2: 2 },
+      activePlayerIds: [PLAYER_ID, 'p2'],
+    })
+
+    expect(result.current.gamePhase).toBe('ROLLING_PHASE')
+    expect(result.current.revealQueue).toEqual([])
   })
 })
