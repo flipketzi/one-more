@@ -383,32 +383,60 @@ class SchockenServiceTest {
         val player2 = makePlayer("Bob")
         service.initGame(makeSession(), listOf(player1, player2))
 
+        val ctxById = mapOf(
+            player1.id.toString() to ctx(player1.id),
+            player2.id.toString() to ctx(player2.id),
+        )
+
+        // Plays one full round in turn order starting from view.currentPlayerIdx
+        fun playRound(view: PlayerGameViewDto) {
+            val startIdx = view.currentPlayerIdx
+            for (i in view.playerOrder.indices) {
+                val pid = view.playerOrder[(startIdx + i) % view.playerOrder.size].id
+                val c = ctxById[pid]!!
+                service.rollDice(sessionCode, c, emptyList())
+                service.revealHand(sessionCode, c)
+            }
+        }
+
         var view = service.getGameView(sessionCode, ctx(player1.id))
         while (view.lidStack > 0) {
-            service.rollDice(sessionCode, ctx(player1.id), emptyList())
-            service.revealHand(sessionCode, ctx(player1.id))
-            service.rollDice(sessionCode, ctx(player2.id), emptyList())
-            service.revealHand(sessionCode, ctx(player2.id))
+            playRound(view)
             view = service.getGameView(sessionCode, ctx(player1.id))
             if (view.gameOver) return // early game-over is acceptable (e.g. Schock Out)
         }
 
         // Stack is now 0. Record lids before the redistribution round.
-        val lidsBefore = view.playerLids.toMap()
-        val totalBefore = lidsBefore.values.sum()
+        val totalBefore = view.playerLids.values.sum()
         assertEquals(13, totalBefore, "All 13 lids must be in play when stack is empty")
 
         // Play one more round (redistribution phase)
-        service.rollDice(sessionCode, ctx(player1.id), emptyList())
-        service.revealHand(sessionCode, ctx(player1.id))
-        service.rollDice(sessionCode, ctx(player2.id), emptyList())
-        service.revealHand(sessionCode, ctx(player2.id))
+        playRound(view)
         view = service.getGameView(sessionCode, ctx(player1.id))
 
         // Conservation law: total lids must remain 13, stack stays 0
         val totalAfter = view.playerLids.values.sum()
         assertEquals(13, totalAfter, "Total lids must be conserved during redistribution")
         assertEquals(0, view.lidStack, "Lid stack must remain 0 after redistribution round")
+    }
+
+    @Test
+    fun `the round loser starts the next round`() {
+        val player1 = makePlayer("Alice")
+        val player2 = makePlayer("Bob")
+        service.initGame(makeSession(), listOf(player1, player2))
+
+        service.rollDice(sessionCode, ctx(player1.id), emptyList())
+        service.revealHand(sessionCode, ctx(player1.id))
+        service.rollDice(sessionCode, ctx(player2.id), emptyList())
+        service.revealHand(sessionCode, ctx(player2.id))
+
+        val view = service.getGameView(sessionCode, ctx(player1.id))
+        if (view.gameOver) return // Schock Out can end the game immediately — skip
+
+        val startingPlayer = view.playerOrder[view.currentPlayerIdx]
+        val startingPlayerLids = view.playerLids[startingPlayer.id] ?: 0
+        assertTrue(startingPlayerLids > 0, "The player who starts the next round must be the one who received lids (the round loser)")
     }
 
     @Test
