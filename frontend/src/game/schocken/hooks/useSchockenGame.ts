@@ -29,12 +29,18 @@ export interface SchockenGameHook {
   loserPlayerId: string | null;
   roundResult: RoundResult | null;
 
+  // Reveal phase state
+  gamePhase: 'ROLLING_PHASE' | 'REVEAL_PHASE';
+  revealQueue: string[];
+  currentRevealerId: string | null;
+
   // Actions
   toggleKeep: (dieId: number) => void;
   roll: () => Promise<void>;
   reveal: () => void;
   onRevealComplete: () => void;      // after animation → CUP_UP (no API call)
   revealToAll: () => Promise<void>;  // explicit public reveal → API call
+  revealCup: () => Promise<void>;    // reveal phase: lift cup and broadcast hand
   stand: () => Promise<void>;
 }
 
@@ -57,6 +63,11 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
   const [gameOver, setGameOver] = useState(false);
   const [loserPlayerId, setLoserPlayerId] = useState<string | null>(null);
   const [roundResult, setRoundResult] = useState<RoundResult | null>(null);
+
+  // Reveal phase state
+  const [gamePhase, setGamePhase] = useState<'ROLLING_PHASE' | 'REVEAL_PHASE'>('ROLLING_PHASE');
+  const [revealQueue, setRevealQueue] = useState<string[]>([]);
+  const currentRevealerId = revealQueue[0] ?? null;
 
   const clientRef = useRef<Client | null>(null);
   // Always-current snapshot of playerOrder, safe to read inside stale WS closures
@@ -152,6 +163,8 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
         setMyHand(null);
         setMyKeptDieIds([]);
         setPhase('IDLE');
+        setGamePhase('ROLLING_PHASE');
+        setRevealQueue([]);
         break;
       }
 
@@ -179,13 +192,25 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
 
       case 'PLAYER_STOOD': {
         const pid = event.playerId as string;
-        const hand = event.hand as HandResult;
+        // hand is no longer in the event — remains hidden until the reveal phase
         setPlayerOrder(prev =>
-          prev.map(p => p.id === pid ? { ...p, standing: true, hand } : p)
+          prev.map(p => p.id === pid ? { ...p, standing: true } : p)
         );
-        if (pid === playerId) {
-          setMyHand(hand);
-        }
+        break;
+      }
+
+      case 'REVEAL_PHASE_STARTED': {
+        const orderedIds = event.orderedRevealerIds as string[];
+        setGamePhase('REVEAL_PHASE');
+        setRevealQueue(orderedIds);
+        if (orderedIds[0] === playerId) setPhase('CUP_DOWN');
+        break;
+      }
+
+      case 'NEXT_REVEALER': {
+        const nextId = event.currentRevealerId as string;
+        setRevealQueue(prev => prev.slice(1));
+        if (nextId === playerId) setPhase('CUP_DOWN');
         break;
       }
 
@@ -236,7 +261,7 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
         setPlayerOrder(prev =>
           prev
             .filter(p => activePlayerIds.includes(p.id))
-            .map(p => ({ ...p, lids: pl[p.id] ?? p.lids, revealed: false, standing: false, hand: null, dice: null, rollIndex: 0 }))
+            .map(p => ({ ...p, lids: pl[p.id] ?? p.lids, revealed: false, standing: false, closed: false, hand: null, dice: null, rollIndex: 0 }))
         );
         // Reset own state for new round
         setPhase('IDLE');
@@ -244,6 +269,8 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
         setMyRollIndex(0);
         setMyHand(null);
         setMyKeptDieIds([]);
+        setGamePhase('ROLLING_PHASE');
+        setRevealQueue([]);
         break;
       }
 
@@ -274,12 +301,17 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
       setMyDice(result.dice);
       setMyRollIndex(result.rollIndex);
       setMyKeptDieIds([]);
-      // Advance phase after roll animation
-      setTimeout(() => setPhase('CUP_DOWN'), 650);
+      const maxRolls = maxRollsThisRound ?? 3;
+      if (result.rollIndex >= maxRolls) {
+        // Server auto-advances on a closed cup — wait for REVEAL_PHASE_STARTED or NEXT_PLAYER
+        setPhase('FINISHED');
+      } else {
+        setTimeout(() => setPhase('CUP_DOWN'), 650);
+      }
     } catch {
       setPhase(myRollIndex === 0 ? 'IDLE' : 'CUP_UP');
     }
-  }, [sessionCode, myKeptDieIds, myRollIndex]);
+  }, [sessionCode, myKeptDieIds, myRollIndex, maxRollsThisRound]);
 
   const reveal = useCallback(() => {
     setPhase('REVEALING');
@@ -298,6 +330,17 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
       setPhase('FINISHED');
     } catch {
       // stay in CUP_UP
+    }
+  }, [sessionCode]);
+
+  // Called during the reveal phase when it's your turn to lift your cup for everyone.
+  const revealCup = useCallback(async () => {
+    try {
+      const hand = await revealHand(sessionCode);
+      setMyHand(hand);
+      setPhase('FINISHED');
+    } catch {
+      // stay in REVEALING
     }
   }, [sessionCode]);
 
@@ -325,11 +368,15 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
     gameOver,
     loserPlayerId,
     roundResult,
+    gamePhase,
+    revealQueue,
+    currentRevealerId,
     toggleKeep,
     roll,
     reveal,
     onRevealComplete,
     revealToAll,
+    revealCup,
     stand,
   };
 }
