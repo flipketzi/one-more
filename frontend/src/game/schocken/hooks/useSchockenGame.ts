@@ -192,20 +192,17 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
       case 'NEXT_PLAYER': {
         const ci = event.currentPlayerIdx as number;
         const mr = event.maxRollsThisRound as number | null;
+        const nextPlayer = playerOrderRef.current[ci];
         setCurrentPlayerIdx(ci);
         setMaxRollsThisRound(mr ?? null);
-        // Reset own phase if it's now our turn again (new round)
-        setPlayerOrder(prev => {
-          const nextPlayer = prev[ci];
-          if (nextPlayer?.id === playerId) {
-            setPhase('IDLE');
-            setMyDice([]);
-            setMyRollIndex(0);
-            setMyHand(null);
-            setMyKeptDieIds([]);
-          }
-          return prev;
-        });
+        // Reset own state if it's now our turn again
+        if (nextPlayer?.id === playerId) {
+          setPhase('IDLE');
+          setMyDice([]);
+          setMyRollIndex(0);
+          setMyHand(null);
+          setMyKeptDieIds([]);
+        }
         break;
       }
 
@@ -225,10 +222,10 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
             (best, p) => (!best || p.hand!.rank > best.hand!.rank) ? p : best,
             null
           );
-        if (losers.length > 0 && winner) {
+        if (losers.length > 0) {
           setRoundResult({
             loserName: losers.map(p => p.username).join(' & '),
-            winnerHandName: winner.hand!.name,
+            winnerHandName: winner?.hand?.name ?? '',
             lidValue,
           });
         }
