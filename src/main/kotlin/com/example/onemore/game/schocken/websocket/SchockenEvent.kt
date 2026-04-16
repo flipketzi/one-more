@@ -51,6 +51,9 @@ class NextRevealerEvent(
 class NextPlayerEvent(
     val currentPlayerIdx: Int,
     val maxRollsThisRound: Int?,
+    /** Non-null only at round start — carries the (possibly rotated) player order so the
+     *  frontend can stay in sync after the loser-starts rotation in startNewRound. */
+    val playerOrderIds: List<String>? = null,
 ) : SchockenEvent("NEXT_PLAYER")
 
 class RoundEndedEvent(

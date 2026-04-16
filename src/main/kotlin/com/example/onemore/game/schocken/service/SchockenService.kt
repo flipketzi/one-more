@@ -365,7 +365,11 @@ class SchockenService(
 
         publisher.publish(
             game.sessionCode,
-            NextPlayerEvent(currentPlayerIdx = 0, maxRollsThisRound = null)
+            NextPlayerEvent(
+                currentPlayerIdx = 0,
+                maxRollsThisRound = null,
+                playerOrderIds = rotated.map { it.id.toString() },
+            )
         )
     }
 
