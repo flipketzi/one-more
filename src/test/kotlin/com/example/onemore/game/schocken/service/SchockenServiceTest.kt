@@ -439,6 +439,114 @@ class SchockenServiceTest {
         assertTrue(startingPlayerLids > 0, "The player who starts the next round must be the one who received lids (the round loser)")
     }
 
+    // ── Aufdeckphase ──────────────────────────────────────────────────────────
+
+    @Test
+    fun `rollDice at max rolls marks turn as closed and auto-advances to next player`() {
+        val player1 = makePlayer("Alice")
+        val player2 = makePlayer("Bob")
+        service.initGame(makeSession(), listOf(player1, player2))
+
+        repeat(3) { service.rollDice(sessionCode, ctx(player1.id), emptyList()) }
+
+        // After 3 rolls, turn advances to player2
+        val view = service.getGameView(sessionCode, ctx(player1.id))
+        assertEquals(player2.id.toString(), view.playerOrder[view.currentPlayerIdx].id)
+        assertTrue(view.playerOrder.first { it.id == player1.id.toString() }.closed)
+    }
+
+    @Test
+    fun `rollDice at max rolls returns non-kept dice as value 0`() {
+        val player = makePlayer("Alice")
+        service.initGame(makeSession(), listOf(player))
+        val ctx = ctx(player.id)
+
+        service.rollDice(sessionCode, ctx, emptyList())
+        service.rollDice(sessionCode, ctx, emptyList())
+        val lastRoll = service.rollDice(sessionCode, ctx, emptyList())
+
+        // All dice are non-kept → all values must be 0
+        assertTrue(lastRoll.dice.all { it.value == 0 }, "Non-kept dice on last roll must be hidden (value = 0)")
+        assertEquals(3, lastRoll.rollIndex)
+    }
+
+    @Test
+    fun `reveal phase starts after all players use all their rolls`() {
+        val player1 = makePlayer("Alice")
+        val player2 = makePlayer("Bob")
+        service.initGame(makeSession(), listOf(player1, player2))
+
+        repeat(3) { service.rollDice(sessionCode, ctx(player1.id), emptyList()) }
+        repeat(3) { service.rollDice(sessionCode, ctx(player2.id), emptyList()) }
+
+        // Reveal phase must be active: player1 is first in queue and can reveal.
+        // Without reveal phase, revealHand would reject a closed cup.
+        assertDoesNotThrow { service.revealHand(sessionCode, ctx(player1.id)) }
+    }
+
+    @Test
+    fun `geschlossen player hand is null in public view before reveal phase`() {
+        val player1 = makePlayer("Alice")
+        val player2 = makePlayer("Bob")
+        service.initGame(makeSession(), listOf(player1, player2))
+
+        repeat(3) { service.rollDice(sessionCode, ctx(player1.id), emptyList()) }
+
+        val view = service.getGameView(sessionCode, ctx(player2.id))
+        val alice = view.playerOrder.first { it.id == player1.id.toString() }
+        assertNull(alice.hand, "Closed player's hand must not be visible before the reveal phase")
+        assertTrue(alice.closed)
+    }
+
+    @Test
+    fun `standing player hand is null in public view before reveal phase`() {
+        val player1 = makePlayer("Alice")
+        val player2 = makePlayer("Bob")
+        service.initGame(makeSession(), listOf(player1, player2))
+
+        service.rollDice(sessionCode, ctx(player1.id), emptyList())
+        service.standPlayer(sessionCode, ctx(player1.id))
+
+        val view = service.getGameView(sessionCode, ctx(player2.id))
+        val alice = view.playerOrder.first { it.id == player1.id.toString() }
+        assertNull(alice.hand, "Standing player's hand must not be visible before the reveal phase")
+        assertTrue(alice.standing)
+    }
+
+    @Test
+    fun `reveal phase only the queue head can reveal`() {
+        val player1 = makePlayer("Alice")
+        val player2 = makePlayer("Bob")
+        service.initGame(makeSession(), listOf(player1, player2))
+
+        repeat(3) { service.rollDice(sessionCode, ctx(player1.id), emptyList()) }
+        repeat(3) { service.rollDice(sessionCode, ctx(player2.id), emptyList()) }
+
+        // Reveal phase active; player1 is first in queue — player2 must not be able to reveal
+        assertThrows<ForbiddenException> {
+            service.revealHand(sessionCode, ctx(player2.id))
+        }
+    }
+
+    @Test
+    fun `reveal phase allows queue head to reveal and advances to next`() {
+        val player1 = makePlayer("Alice")
+        val player2 = makePlayer("Bob")
+        service.initGame(makeSession(), listOf(player1, player2))
+
+        repeat(3) { service.rollDice(sessionCode, ctx(player1.id), emptyList()) }
+        repeat(3) { service.rollDice(sessionCode, ctx(player2.id), emptyList()) }
+
+        // player1 reveals successfully
+        val hand = service.revealHand(sessionCode, ctx(player1.id))
+        assertNotNull(hand.name)
+
+        val view = service.getGameView(sessionCode, ctx(player1.id))
+        assertTrue(view.playerOrder.first { it.id == player1.id.toString() }.revealed)
+    }
+
+    // ── Round end ─────────────────────────────────────────────────────────────
+
     @Test
     fun `two-player game does not end after the first round while the lid stack still has lids`() {
         // Regression: activePlayers2 used to filter by lids > 0, which made the game end after
