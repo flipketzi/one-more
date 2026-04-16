@@ -374,4 +374,24 @@ class SchockenServiceTest {
         val view = service.getGameView(sessionCode, ctx)
         assertTrue(view.gameOver, "Game must be over when only one player remains")
     }
+
+    @Test
+    fun `two-player game does not end after the first round while the lid stack still has lids`() {
+        // Regression: activePlayers2 used to filter by lids > 0, which made the game end after
+        // round 1 because only the loser had lids (winner stayed at 0).
+        val player1 = makePlayer("Alice")
+        val player2 = makePlayer("Bob")
+        service.initGame(makeSession(), listOf(player1, player2))
+
+        // Play one full round
+        service.rollDice(sessionCode, ctx(player1.id), emptyList())
+        service.revealHand(sessionCode, ctx(player1.id))
+        service.rollDice(sessionCode, ctx(player2.id), emptyList())
+        service.revealHand(sessionCode, ctx(player2.id))
+
+        val view = service.getGameView(sessionCode, ctx(player1.id))
+        assertFalse(view.gameOver, "Game must NOT be over after the first round when the lid stack still has lids")
+        assertTrue(view.lidStack < 13, "Lid stack should have decreased after round 1")
+        assertTrue(view.lidStack > 0, "Lid stack must not be empty after a single round")
+    }
 }
