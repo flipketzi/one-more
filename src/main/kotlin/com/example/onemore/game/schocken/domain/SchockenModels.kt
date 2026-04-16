@@ -15,6 +15,7 @@ data class PlayerTurn(
     var hand: HandResult? = null,
     var revealed: Boolean = false,
     var standing: Boolean = false,
+    var closed: Boolean = false,   // all rolls used, hand hidden until reveal phase
 )
 
 data class SchockenPlayerInfo(
@@ -33,4 +34,6 @@ data class SchockenGameState(
     var lidStack: Int = 13,
     val turns: MutableMap<UUID, PlayerTurn> = mutableMapOf(),
     var gameOver: Boolean = false,
+    var inRevealPhase: Boolean = false,
+    var revealQueue: MutableList<UUID> = mutableListOf(),
 )
