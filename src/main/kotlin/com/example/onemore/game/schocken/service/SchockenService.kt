@@ -90,16 +90,22 @@ class SchockenService(
             PlayerRolledEvent(playerId = context.playerId.toString(), rollIndex = turn.rollCount)
         )
 
-        // Auto-finish: if reached max rolls, evaluate hand
+        // Auto-finish: if reached max rolls, evaluate hand and close the cup
         if (turn.rollCount >= maxRolls) {
             val hand = evaluateHand(updatedDice.map { it.value }, turn.hadKeptDice)
             turn.hand = hand
+            turn.closed = true
+            advanceToNextPlayer(game)
         }
 
-        return RollResponse(
-            dice = updatedDice.map { DieDto(it.id, it.value, it.kept) },
-            rollIndex = turn.rollCount,
-        )
+        // Non-kept dice are hidden for closed cups (player may not look at the last roll)
+        val returnedDice = if (turn.closed) {
+            updatedDice.map { die -> DieDto(die.id, if (die.kept) die.value else 0, die.kept) }
+        } else {
+            updatedDice.map { DieDto(it.id, it.value, it.kept) }
+        }
+
+        return RollResponse(dice = returnedDice, rollIndex = turn.rollCount)
     }
 
     // ── Reveal ───────────────────────────────────────────────────────────────
@@ -108,9 +114,40 @@ class SchockenService(
         val game = getGame(code)
         val turn = getTurn(game, context.playerId)
 
-        if (turn.rollCount == 0) throw GameActionException("Noch nicht gewürfelt")
         if (turn.revealed) throw GameActionException("Hand bereits aufgedeckt")
+
+        if (game.inRevealPhase) {
+            // Reveal phase: only the queue head may reveal
+            val headId = game.revealQueue.firstOrNull()
+                ?: throw GameActionException("Keine Aufdeckphase aktiv")
+            if (headId != context.playerId)
+                throw ForbiddenException("Du bist nicht an der Reihe zum Aufdecken")
+
+            turn.revealed = true
+            publisher.publish(
+                code,
+                PlayerRevealedEvent(
+                    playerId = context.playerId.toString(),
+                    dice = turn.dice.map { DieDto(it.id, it.value, it.kept) },
+                    hand = turn.hand!!.toDto(),
+                )
+            )
+            game.revealQueue.removeFirst()
+            if (game.revealQueue.isEmpty()) {
+                game.inRevealPhase = false
+                checkRoundEnd(game)
+            } else {
+                publisher.publish(code, NextRevealerEvent(game.revealQueue.first().toString()))
+            }
+            return turn.hand!!.toDto()
+        }
+
+        // Normal offen path: player voluntarily lifts cup before max rolls
+        if (turn.rollCount == 0) throw GameActionException("Noch nicht gewürfelt")
         if (turn.standing) throw GameActionException("Du hast bereits gestanden")
+        if (turn.closed) throw GameActionException("Hand geschlossen — warte auf die Aufdeckphase")
+        val currentPlayer = game.playerOrder[game.currentPlayerIdx]
+        if (currentPlayer.id != context.playerId) throw ForbiddenException("Nicht dein Zug")
 
         val hand = evaluateHand(turn.dice.map { it.value }, turn.hadKeptDice)
         turn.hand = hand
@@ -154,10 +191,8 @@ class SchockenService(
 
         turn.standing = true
 
-        publisher.publish(
-            code,
-            PlayerStoodEvent(playerId = context.playerId.toString(), hand = hand.toDto())
-        )
+        // Hand is NOT broadcast — it stays hidden until the reveal phase
+        publisher.publish(code, PlayerStoodEvent(playerId = context.playerId.toString()))
 
         advanceToNextPlayer(game)
 
@@ -183,8 +218,14 @@ class SchockenService(
                     rollIndex = turn?.rollCount ?: 0,
                     revealed = turn?.revealed ?: false,
                     standing = turn?.standing ?: false,
-                    hand = if (turn?.revealed == true || turn?.standing == true) turn.hand?.toDto() else null,
-                    dice = if (turn?.revealed == true) turn.dice.map { DieDto(it.id, it.value, it.kept) } else null,
+                    hand = if (turn?.revealed == true) turn.hand?.toDto() else null,
+                    dice = when {
+                        turn?.revealed == true -> turn.dice.map { DieDto(it.id, it.value, it.kept) }
+                        turn?.standing == true || turn?.closed == true ->
+                            turn!!.dice.filter { it.kept }.map { DieDto(it.id, it.value, it.kept) }
+                        else -> null
+                    },
+                    closed = turn?.closed ?: false,
                 )
             },
             currentPlayerIdx = game.currentPlayerIdx,
@@ -210,8 +251,7 @@ class SchockenService(
     private fun advanceToNextPlayer(game: SchockenGameState) {
         val nextIdx = game.currentPlayerIdx + 1
         if (nextIdx >= game.playerOrder.size) {
-            // All players have gone — check round end
-            checkRoundEnd(game)
+            startRevealPhaseOrEnd(game)
         } else {
             game.currentPlayerIdx = nextIdx
             publisher.publish(
@@ -224,8 +264,29 @@ class SchockenService(
         }
     }
 
+    private fun startRevealPhaseOrEnd(game: SchockenGameState) {
+        val queue = game.playerOrder
+            .map { it.id }
+            .filter { id -> game.turns[id]?.revealed == false }
+
+        if (queue.isEmpty()) {
+            checkRoundEnd(game)
+            return
+        }
+
+        game.inRevealPhase = true
+        game.revealQueue = queue.toMutableList()
+        publisher.publish(
+            game.sessionCode,
+            RevealPhaseStartedEvent(
+                orderedRevealerIds = queue.map { it.toString() },
+                currentRevealerId = queue.first().toString(),
+            )
+        )
+    }
+
     private fun checkRoundEnd(game: SchockenGameState) {
-        val allDone = game.turns.values.all { it.revealed || it.standing }
+        val allDone = game.turns.values.all { it.revealed || it.standing || it.closed }
         if (!allDone) return
 
         val turnsWithHands = game.turns.values.filter { it.hand != null }
@@ -290,6 +351,8 @@ class SchockenService(
         game.playerOrder.clear()
         game.maxRollsThisRound = null
         game.currentPlayerIdx = 0
+        game.inRevealPhase = false
+        game.revealQueue.clear()
 
         // Rotate player list so the round loser is always first (preserves existing index-based logic)
         val starterIdx = activePlayers.indexOfFirst { it.id == starterPlayerId }.coerceAtLeast(0)
@@ -364,6 +427,7 @@ data class PublicPlayerStateDto(
     val rollIndex: Int,
     val revealed: Boolean,
     val standing: Boolean,
+    val closed: Boolean,
     val hand: HandResultDto?,
     val dice: List<DieDto>?,
 )
