@@ -259,7 +259,12 @@ class SchockenService(
         }
 
         val updatedPlayerLids = game.playerOrder.associate { it.id.toString() to it.lids }
-        val activePlayers2 = game.playerOrder.filter { it.lids > 0 }
+        // While the central stack still has lids, no player is eliminated yet.
+        // Elimination (lids == 0 after redistribution) only applies once the stack is empty.
+        val activePlayers2 = if (game.lidStack == 0)
+            game.playerOrder.filter { it.lids > 0 }
+        else
+            game.playerOrder.toList()
 
         publisher.publish(
             game.sessionCode,
