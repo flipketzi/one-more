@@ -232,6 +232,18 @@ class SchockenServiceTest {
     }
 
     @Test
+    fun `rollDice throws GameActionException when keeping dice on the first roll`() {
+        // Dice start at value 1 — keeping all three before rolling would be a free Schock Out
+        val player = makePlayer("Alice")
+        service.initGame(makeSession(), listOf(player))
+
+        assertThrows<GameActionException> {
+            service.rollDice(sessionCode, ctx(player.id), listOf(0, 1, 2))
+        }
+        assertEquals(0, service.getGameView(sessionCode, ctx(player.id)).myRollIndex)
+    }
+
+    @Test
     fun `rollDice keeps specified dice and re-rolls the rest`() {
         val player = makePlayer("Alice")
         service.initGame(makeSession(), listOf(player))
