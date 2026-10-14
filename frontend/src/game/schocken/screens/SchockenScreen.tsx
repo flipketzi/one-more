@@ -10,6 +10,7 @@ import { LidTracker } from '../components/LidTracker';
 import { GameOverOverlay } from '../overlays/GameOverOverlay';
 import { OpeningRoundOverlay } from '../overlays/OpeningRoundOverlay';
 import { RoundEndedOverlay } from '../overlays/RoundEndedOverlay';
+import { RoundEvaluationOverlay } from '../overlays/RoundEvaluationOverlay';
 import { RevealPhaseOverlay } from '../overlays/RevealPhaseOverlay';
 
 const SchockenScreenInner: React.FC = () => {
@@ -223,6 +224,16 @@ const SchockenScreenInner: React.FC = () => {
       </AnimatePresence>
 
       <AnimatePresence>
+        {game.roundEvaluation && (
+          <RoundEvaluationOverlay
+            key="round-evaluation"
+            evaluation={game.roundEvaluation}
+            playerId={player!.id}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
         {game.openingRound && (
           <OpeningRoundOverlay
             key="opening-round"
@@ -234,7 +245,7 @@ const SchockenScreenInner: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {game.gameOver && game.loserPlayerId && !game.openingRound && (
+      {game.gameOver && game.loserPlayerId && !game.openingRound && !game.roundEvaluation && (
         <GameOverOverlay loserPlayerId={game.loserPlayerId} players={game.playerOrder} />
       )}
     </div>

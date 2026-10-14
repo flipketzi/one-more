@@ -37,7 +37,7 @@ vi.mock('../api/schockenApi', () => ({
   getSchockenState: (...args: unknown[]) => mockGetState(...args),
 }))
 
-import { useSchockenGame } from './useSchockenGame'
+import { ROUND_EVALUATION_MS, useSchockenGame } from './useSchockenGame'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -315,7 +315,8 @@ describe('useSchockenGame', () => {
       .toMatchObject({ status: 'WAITING', gameType: null })
   })
 
-  it('ROUND_ENDED updates lidStack and playerLids and sets roundResult', () => {
+  it('ROUND_ENDED updates lidStack and playerLids and announces roundResult after the evaluation', () => {
+    vi.useFakeTimers()
     const { result } = renderHook(() => useSchockenGame(CODE, PLAYER_ID))
     connectWs()
 
@@ -339,8 +340,85 @@ describe('useSchockenGame', () => {
 
     expect(result.current.lidStack).toBe(10)
     expect(result.current.playerLids).toEqual({ [PLAYER_ID]: 0, p2: 3 })
-    expect(result.current.roundResult).not.toBeNull()
+    expect(result.current.roundEvaluation?.result?.lidValue).toBe(3)
+    expect(result.current.roundResult).toBeNull()
+
+    act(() => { vi.advanceTimersByTime(ROUND_EVALUATION_MS) })
+
+    expect(result.current.roundEvaluation).toBeNull()
     expect(result.current.roundResult?.lidValue).toBe(3)
+    vi.useRealTimers()
+  })
+
+  it('ROUND_ENDED sees a PLAYER_REVEALED delivered in the same WS frame batch', () => {
+    const { result } = renderHook(() => useSchockenGame(CODE, PLAYER_ID))
+    connectWs()
+
+    fireWsEvent({
+      type: 'GAME_STARTED',
+      playerOrder: [makePlayer(PLAYER_ID, 'Alice'), makePlayer('p2', 'Bob')],
+      lidStack: 13,
+      playerLids: { [PLAYER_ID]: 0, p2: 0 },
+      currentPlayerIdx: 0,
+    })
+    fireWsEvent({
+      type: 'PLAYER_REVEALED',
+      playerId: 'p2',
+      dice: [{ id: 0, value: 1, kept: false }],
+      hand: { name: '3-2-1', lids: 1, rank: 321 },
+    })
+
+    // SockJS may deliver several STOMP frames at once — no render happens in between
+    const handler = mockSubscribe.mock.calls[0][1]
+    act(() => {
+      handler({ body: JSON.stringify({
+        type: 'PLAYER_REVEALED',
+        playerId: PLAYER_ID,
+        dice: [{ id: 0, value: 1, kept: true }],
+        hand: { name: 'Schock 4', lids: 4, rank: 9040 },
+      }) })
+      handler({ body: JSON.stringify({
+        type: 'ROUND_ENDED',
+        loserIds: ['p2'],
+        lidValue: 4,
+        lidStack: 9,
+        playerLids: { [PLAYER_ID]: 0, p2: 4 },
+        activePlayerIds: [PLAYER_ID, 'p2'],
+      }) })
+    })
+
+    expect(result.current.roundEvaluation?.result?.winnerHandName).toBe('Schock 4')
+  })
+
+  it('ROUND_ENDED keeps every revealed throw in roundEvaluation after the round reset', () => {
+    const { result } = renderHook(() => useSchockenGame(CODE, PLAYER_ID))
+    connectWs()
+
+    fireWsEvent({
+      type: 'GAME_STARTED',
+      playerOrder: [makePlayer(PLAYER_ID, 'Alice'), makePlayer('p2', 'Bob')],
+      lidStack: 13,
+      playerLids: { [PLAYER_ID]: 0, p2: 0 },
+      currentPlayerIdx: 0,
+    })
+    const myDice = [{ id: 0, value: 6, kept: false }, { id: 1, value: 6, kept: true }, { id: 2, value: 1, kept: false }]
+    fireWsEvent({ type: 'PLAYER_REVEALED', playerId: PLAYER_ID, dice: myDice, hand: { name: '6-6-1', lids: 1, rank: 661 } })
+    fireWsEvent({ type: 'PLAYER_REVEALED', playerId: 'p2', dice: [], hand: { name: '3-2-1', lids: 1, rank: 321 } })
+
+    fireWsEvent({
+      type: 'ROUND_ENDED',
+      loserIds: ['p2'],
+      lidValue: 1,
+      lidStack: 12,
+      playerLids: { [PLAYER_ID]: 0, p2: 1 },
+      activePlayerIds: [PLAYER_ID, 'p2'],
+    })
+
+    expect(result.current.playerOrder[0].dice).toBeNull()
+    const evaluated = result.current.roundEvaluation!.players
+    expect(evaluated.map(p => p.id)).toEqual([PLAYER_ID, 'p2'])
+    expect(evaluated[0].dice).toEqual(myDice)
+    expect(evaluated[0].hand?.name).toBe('6-6-1')
   })
 
   it('ROUND_ENDED resets revealed/standing/hand/dice/rollIndex on all players in playerOrder', () => {

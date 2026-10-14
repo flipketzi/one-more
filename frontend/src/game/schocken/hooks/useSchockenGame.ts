@@ -11,6 +11,16 @@ export interface RoundResult {
   lidValue: number;
 }
 
+/** How long every client shows the round's throws before the result is announced. */
+export const ROUND_EVALUATION_MS = 5000;
+
+export interface RoundEvaluation {
+  /** Every player's final throw of the round, in player order. */
+  players: PublicPlayerState[];
+  /** Announced once the evaluation is over. */
+  result: RoundResult | null;
+}
+
 export interface SchockenGameHook {
   // Local UI state (own dice)
   myDice: Die[];
@@ -28,6 +38,8 @@ export interface SchockenGameHook {
   gameOver: boolean;
   loserPlayerId: string | null;
   roundResult: RoundResult | null;
+  /** Set for ROUND_EVALUATION_MS right after a round ended, before roundResult. */
+  roundEvaluation: RoundEvaluation | null;
   /** "Erster Hoch" result to show until the player dismisses it. */
   openingRound: OpeningRound | null;
 
@@ -67,6 +79,7 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
   const [gameOver, setGameOver] = useState(false);
   const [loserPlayerId, setLoserPlayerId] = useState<string | null>(null);
   const [roundResult, setRoundResult] = useState<RoundResult | null>(null);
+  const [roundEvaluation, setRoundEvaluation] = useState<RoundEvaluation | null>(null);
   const [openingRound, setOpeningRound] = useState<OpeningRound | null>(null);
 
   // Reveal phase state
@@ -78,10 +91,22 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
   // Always-current snapshot of playerOrder, safe to read inside stale WS closures
   const playerOrderRef = useRef<PublicPlayerState[]>([]);
 
-  // Keep ref in sync so WS event handlers can always read current playerOrder
+  // Updates the ref synchronously: SockJS can deliver several events in one frame
+  // (e.g. the last PLAYER_REVEALED followed by ROUND_ENDED) without a render in between.
+  function updatePlayerOrder(update: (prev: PublicPlayerState[]) => PublicPlayerState[]) {
+    playerOrderRef.current = update(playerOrderRef.current);
+    setPlayerOrder(playerOrderRef.current);
+  }
+
+  // Announce the round result once the evaluation has been shown long enough
   useEffect(() => {
-    playerOrderRef.current = playerOrder;
-  }, [playerOrder]);
+    if (!roundEvaluation) return;
+    const timer = setTimeout(() => {
+      setRoundEvaluation(null);
+      setRoundResult(roundEvaluation.result);
+    }, ROUND_EVALUATION_MS);
+    return () => clearTimeout(timer);
+  }, [roundEvaluation]);
 
   // Auto-dismiss round result after 3 seconds
   useEffect(() => {
@@ -103,7 +128,7 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
   function applyFullState(state: PlayerGameView) {
     setMyDice(state.myDice);
     setMyRollIndex(state.myRollIndex);
-    setPlayerOrder(state.playerOrder);
+    updatePlayerOrder(() => state.playerOrder);
     setCurrentPlayerIdx(state.currentPlayerIdx);
     setMaxRollsThisRound(state.maxRollsThisRound);
     setLidStack(state.lidStack);
@@ -153,7 +178,7 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
   function handleEvent(event: any) {
     switch (event.type as string) {
       case 'GAME_STARTED': {
-        setPlayerOrder(event.playerOrder as PublicPlayerState[]);
+        updatePlayerOrder(() => event.playerOrder as PublicPlayerState[]);
         setLidStack(event.lidStack as number);
         setPlayerLids(event.playerLids as Record<string, number>);
         setCurrentPlayerIdx(event.currentPlayerIdx as number);
@@ -169,7 +194,7 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
       case 'PLAYER_ROLLED': {
         const pid = event.playerId as string;
         const rollIndex = event.rollIndex as number;
-        setPlayerOrder(prev =>
+        updatePlayerOrder(prev =>
           prev.map(p => p.id === pid ? { ...p, rollIndex } : p)
         );
         break;
@@ -179,7 +204,7 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
         const pid = event.playerId as string;
         const dice = event.dice as Die[];
         const hand = event.hand as HandResult;
-        setPlayerOrder(prev =>
+        updatePlayerOrder(prev =>
           prev.map(p => p.id === pid ? { ...p, revealed: true, hand, dice } : p)
         );
         if (pid === playerId) {
@@ -191,7 +216,7 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
       case 'PLAYER_STOOD': {
         const pid = event.playerId as string;
         // hand is no longer in the event — remains hidden until the reveal phase
-        setPlayerOrder(prev =>
+        updatePlayerOrder(prev =>
           prev.map(p => p.id === pid ? { ...p, standing: true } : p)
         );
         break;
@@ -220,15 +245,12 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
         // At round start the backend rotates playerOrder (loser first).
         // playerOrderIds carries the new ordering so we stay in sync.
         if (newOrderIds) {
-          setPlayerOrder(prev => {
+          updatePlayerOrder(prev => {
             const map = new Map(prev.map(p => [p.id, p]));
             return newOrderIds.map(id => map.get(id)).filter((p): p is typeof prev[number] => p != null);
           });
         }
 
-        // Derive the next player's id directly from the event so we don't
-        // depend on the playerOrderRef (which may still hold a stale value
-        // from before the setPlayerOrder call above lands).
         const nextPlayerId = newOrderIds ? newOrderIds[ci] : playerOrderRef.current[ci]?.id;
         setCurrentPlayerIdx(ci);
         setMaxRollsThisRound(mr ?? null);
@@ -257,18 +279,20 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
             (best, p) => (!best || p.hand!.rank > best.hand!.rank) ? p : best,
             null
           );
-        if (losers.length > 0) {
-          setRoundResult({
-            loserName: losers.map(p => p.username).join(' & '),
-            winnerHandName: winner?.hand?.name ?? '',
-            lidValue,
-          });
-        }
+        const announcement = losers.length > 0
+          ? {
+              loserName: losers.map(p => p.username).join(' & '),
+              winnerHandName: winner?.hand?.name ?? '',
+              lidValue,
+            }
+          : null;
+        // Snapshot the throws before the per-player state is reset for the new round below
+        setRoundEvaluation({ players: prev.filter(p => p.hand != null), result: announcement });
 
         setLidStack(ls);
         setPlayerLids(pl);
         // Filter eliminated players, update lid counts, and reset per-player state for the new round
-        setPlayerOrder(prev =>
+        updatePlayerOrder(prev =>
           prev
             .filter(p => activePlayerIds.includes(p.id))
             .map(p => ({ ...p, lids: pl[p.id] ?? p.lids, revealed: false, standing: false, closed: false, hand: null, dice: null, rollIndex: 0 }))
@@ -391,6 +415,7 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
     gameOver,
     loserPlayerId,
     roundResult,
+    roundEvaluation,
     openingRound,
     gamePhase,
     revealQueue,
