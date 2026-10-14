@@ -72,16 +72,13 @@ class SchockenService(
             throw GameActionException("Maximale Anzahl an Würfen erreicht")
         }
 
-        // Track if dice were kept between rolls
-        if (turn.rollCount > 0 && keptDieIds.isNotEmpty()) {
-            turn.hadKeptDice = true
-        }
-
         val updatedDice = turn.dice.map { die ->
             if (die.id in keptDieIds) die.copy(kept = true)
             else die.copy(value = Random.nextInt(1, 7), kept = false)
         }
         turn.dice = updatedDice
+        // Only the current combination counts: re-rolling all dice is a fresh throw again
+        turn.hadKeptDice = updatedDice.any { it.kept }
         turn.rollCount++
 
         publisher.publish(
