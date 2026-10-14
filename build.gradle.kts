@@ -46,3 +46,9 @@ kotlin {
 tasks.withType<Test> {
     useJUnitPlatform()
 }
+
+// Only build the executable boot jar: the Dockerfile copies build/libs/one-more-*.jar
+// and fails if the plain jar matches as well.
+tasks.named<Jar>("jar") {
+    enabled = false
+}
