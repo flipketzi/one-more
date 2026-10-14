@@ -18,7 +18,8 @@ export const DiceCup: React.FC<Props> = ({ onReveal, onRevealComplete, revealing
   };
 
   return (
-    <div className="flex flex-col items-center gap-3">
+    // A native drag (e.g. of a text selection covering the cup) would cancel the pointer gesture
+    <div className="flex flex-col items-center gap-3" onDragStart={e => e.preventDefault()}>
       <motion.div
         initial={{ y: -80, opacity: 0 }}
         animate={
