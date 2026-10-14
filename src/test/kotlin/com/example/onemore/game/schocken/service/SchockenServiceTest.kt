@@ -7,6 +7,7 @@ import com.example.onemore.domain.repository.GameSessionRepository
 import com.example.onemore.domain.repository.PlayerRepository
 import com.example.onemore.exception.ForbiddenException
 import com.example.onemore.exception.GameActionException
+import com.example.onemore.game.schocken.websocket.HandResultDto
 import com.example.onemore.game.schocken.websocket.SchockenEventPublisher
 import com.example.onemore.security.PlayerContext
 import org.junit.jupiter.api.Assertions.*
@@ -17,6 +18,9 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import java.util.UUID
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 @ExtendWith(MockitoExtension::class)
 class SchockenServiceTest {
@@ -543,6 +547,37 @@ class SchockenServiceTest {
 
         val view = service.getGameView(sessionCode, ctx(player1.id))
         assertTrue(view.playerOrder.first { it.id == player1.id.toString() }.revealed)
+    }
+
+    @Test
+    fun `reveal phase concurrent reveals by the queue head succeed only once`() {
+        // Regression: a doubled POST /reveal raced through revealHand and either crashed on an
+        // empty queue or removed the next revealer from the queue without them revealing.
+        val player1 = makePlayer("Alice")
+        val player2 = makePlayer("Bob")
+        val player3 = makePlayer("Carol")
+        service.initGame(makeSession(), listOf(player1, player2, player3))
+        listOf(player1, player2, player3).forEach { p ->
+            repeat(3) { service.rollDice(sessionCode, ctx(p.id), emptyList()) }
+        }
+
+        val attempts = 8
+        val startGate = CountDownLatch(1)
+        val pool = Executors.newFixedThreadPool(attempts)
+        val outcomes = (1..attempts).map {
+            pool.submit<Result<HandResultDto>> {
+                startGate.await()
+                runCatching { service.revealHand(sessionCode, ctx(player1.id)) }
+            }
+        }
+        startGate.countDown()
+        val results = outcomes.map { it.get(5, TimeUnit.SECONDS) }
+        pool.shutdown()
+
+        assertEquals(1, results.count { it.isSuccess })
+        assertTrue(results.filter { it.isFailure }.all { it.exceptionOrNull() is GameActionException })
+        // Bob is still the queue head and must be able to reveal
+        assertDoesNotThrow { service.revealHand(sessionCode, ctx(player2.id)) }
     }
 
     // ── Round end ─────────────────────────────────────────────────────────────
