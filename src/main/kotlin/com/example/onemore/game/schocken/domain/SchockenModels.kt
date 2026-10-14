@@ -36,4 +36,15 @@ data class SchockenGameState(
     var gameOver: Boolean = false,
     var inRevealPhase: Boolean = false,
     var revealQueue: MutableList<UUID> = mutableListOf(),
+    /** "Erster Hoch" result — kept until the first roll of the following round. */
+    var openingRound: OpeningRound? = null,
+    var gameOverLoserId: UUID? = null,
 )
+
+/** Outcome of a finished round: who lost and how many lids the best hand was worth. */
+data class RoundOutcome(val loserIds: List<UUID>, val lidValue: Int)
+
+/** One player's single throw in the "Erster Hoch" opening round. */
+data class OpeningThrow(val playerId: UUID, val dice: List<SchockenDie>, val hand: HandResult)
+
+data class OpeningRound(val throws: List<OpeningThrow>, val outcome: RoundOutcome)

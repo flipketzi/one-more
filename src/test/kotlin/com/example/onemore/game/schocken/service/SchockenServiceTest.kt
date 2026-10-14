@@ -33,18 +33,42 @@ class SchockenServiceTest {
 
     private val sessionId: UUID = UUID.randomUUID()
     private val sessionCode = "TCODE"
+    private val diceRoller = ScriptedDiceRoller()
 
     private companion object {
         // A fresh throw is Jule/General/Straße with p = 1/6, so 500 attempts never realistically miss
         const val MAX_RANDOM_ATTEMPTS = 500
+
+        // Opening throws used by startGame: the first player loses with a normal hand (1 lid)
+        val LOSING_OPENING_THROW = listOf(5, 3, 2)
+        val WINNING_OPENING_THROW = listOf(6, 5, 2)
+    }
+
+    /** Returns scripted values first, then falls back to random rolls. */
+    private class ScriptedDiceRoller : DiceRoller {
+        private val scripted = ArrayDeque<Int>()
+        private val fallback = RandomDiceRoller()
+
+        fun script(vararg throws: List<Int>) = throws.forEach { scripted.addAll(it) }
+
+        override fun roll(): Int = scripted.removeFirstOrNull() ?: fallback.roll()
     }
 
     @BeforeEach
     fun setup() {
-        service = SchockenService(sessionRepository, playerRepository, publisher, RandomDiceRoller())
+        service = SchockenService(sessionRepository, playerRepository, publisher, diceRoller)
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    /**
+     * Starts a game whose "Erster Hoch" opening round is lost by the first player, so the
+     * first player also starts the first regular round and the stack holds 12 lids.
+     */
+    private fun startGame(vararg players: Player) {
+        diceRoller.script(LOSING_OPENING_THROW, *Array(players.size - 1) { WINNING_OPENING_THROW })
+        service.initGame(makeSession(), players.toList())
+    }
 
     private fun makeSession() = GameSession(
         id = sessionId,
@@ -196,7 +220,7 @@ class SchockenServiceTest {
     fun `rollDice throws ForbiddenException when it is not the player's turn`() {
         val player1 = makePlayer("Alice")
         val player2 = makePlayer("Bob")
-        service.initGame(makeSession(), listOf(player1, player2))
+        startGame(player1, player2)
 
         assertThrows<ForbiddenException> {
             service.rollDice(sessionCode, ctx(player2.id), emptyList())
@@ -205,23 +229,22 @@ class SchockenServiceTest {
 
     @Test
     fun `rollDice throws GameActionException when max rolls are reached`() {
-        val player = makePlayer("Alice")
-        service.initGame(makeSession(), listOf(player))
-        val ctx = ctx(player.id)
-
-        service.rollDice(sessionCode, ctx, emptyList())
-        service.rollDice(sessionCode, ctx, emptyList())
-        service.rollDice(sessionCode, ctx, emptyList())
+        val player1 = makePlayer("Alice")
+        val player2 = makePlayer("Bob")
+        startGame(player1, player2)
+        repeat(3) { service.rollDice(sessionCode, ctx(player1.id), emptyList()) }
+        // The last player stays current once all rolls are used (reveal phase starts)
+        repeat(3) { service.rollDice(sessionCode, ctx(player2.id), emptyList()) }
 
         assertThrows<GameActionException> {
-            service.rollDice(sessionCode, ctx, emptyList())
+            service.rollDice(sessionCode, ctx(player2.id), emptyList())
         }
     }
 
     @Test
     fun `rollDice increments rollIndex with each call`() {
         val player = makePlayer("Alice")
-        service.initGame(makeSession(), listOf(player))
+        startGame(player, makePlayer("Bob"))
         val ctx = ctx(player.id)
 
         val r1 = service.rollDice(sessionCode, ctx, emptyList())
@@ -235,7 +258,7 @@ class SchockenServiceTest {
     fun `rollDice throws GameActionException when keeping dice on the first roll`() {
         // Dice start at value 1 — keeping all three before rolling would be a free Schock Out
         val player = makePlayer("Alice")
-        service.initGame(makeSession(), listOf(player))
+        startGame(player, makePlayer("Bob"))
 
         assertThrows<GameActionException> {
             service.rollDice(sessionCode, ctx(player.id), listOf(0, 1, 2))
@@ -246,7 +269,7 @@ class SchockenServiceTest {
     @Test
     fun `rollDice keeps specified dice and re-rolls the rest`() {
         val player = makePlayer("Alice")
-        service.initGame(makeSession(), listOf(player))
+        startGame(player, makePlayer("Bob"))
         val ctx = ctx(player.id)
 
         val firstRoll = service.rollDice(sessionCode, ctx, emptyList())
@@ -268,7 +291,7 @@ class SchockenServiceTest {
             if (specialHandsSeen > 0) return@repeat
             val player1 = makePlayer("Alice")
             val player2 = makePlayer("Bob")
-            service.initGame(makeSession(), listOf(player1, player2))
+            startGame(player1, player2)
 
             service.rollDice(sessionCode, ctx(player1.id), emptyList())
             service.rollDice(sessionCode, ctx(player1.id), listOf(0))
@@ -290,7 +313,7 @@ class SchockenServiceTest {
     fun `keeping dice in the last roll prevents Jule General and Straße`() {
         val player1 = makePlayer("Alice")
         val player2 = makePlayer("Bob")
-        service.initGame(makeSession(), listOf(player1, player2))
+        startGame(player1, player2)
 
         service.rollDice(sessionCode, ctx(player1.id), emptyList())
         service.rollDice(sessionCode, ctx(player1.id), emptyList())
@@ -308,7 +331,7 @@ class SchockenServiceTest {
     @Test
     fun `revealHand throws GameActionException when player has not rolled`() {
         val player = makePlayer("Alice")
-        service.initGame(makeSession(), listOf(player))
+        startGame(player, makePlayer("Bob"))
 
         assertThrows<GameActionException> {
             service.revealHand(sessionCode, ctx(player.id))
@@ -318,7 +341,7 @@ class SchockenServiceTest {
     @Test
     fun `revealHand throws GameActionException when already revealed`() {
         val player = makePlayer("Alice")
-        service.initGame(makeSession(), listOf(player))
+        startGame(player, makePlayer("Bob"))
         val ctx = ctx(player.id)
 
         service.rollDice(sessionCode, ctx, emptyList())
@@ -332,7 +355,7 @@ class SchockenServiceTest {
     @Test
     fun `revealHand returns a valid evaluated hand`() {
         val player = makePlayer("Alice")
-        service.initGame(makeSession(), listOf(player))
+        startGame(player, makePlayer("Bob"))
         val ctx = ctx(player.id)
 
         service.rollDice(sessionCode, ctx, emptyList())
@@ -349,7 +372,7 @@ class SchockenServiceTest {
     fun `standPlayer throws ForbiddenException when it is not the player's turn`() {
         val player1 = makePlayer("Alice")
         val player2 = makePlayer("Bob")
-        service.initGame(makeSession(), listOf(player1, player2))
+        startGame(player1, player2)
 
         service.rollDice(sessionCode, ctx(player1.id), emptyList())
 
@@ -361,7 +384,7 @@ class SchockenServiceTest {
     @Test
     fun `standPlayer throws GameActionException when player has not rolled`() {
         val player = makePlayer("Alice")
-        service.initGame(makeSession(), listOf(player))
+        startGame(player, makePlayer("Bob"))
 
         assertThrows<GameActionException> {
             service.standPlayer(sessionCode, ctx(player.id))
@@ -372,7 +395,7 @@ class SchockenServiceTest {
     fun `standPlayer sets maxRollsThisRound based on first player's roll count`() {
         val player1 = makePlayer("Alice")
         val player2 = makePlayer("Bob")
-        service.initGame(makeSession(), listOf(player1, player2))
+        startGame(player1, player2)
 
         service.rollDice(sessionCode, ctx(player1.id), emptyList()) // rollCount = 1
         service.standPlayer(sessionCode, ctx(player1.id))           // maxRollsThisRound = 1
@@ -390,7 +413,7 @@ class SchockenServiceTest {
     fun `standPlayer does not override maxRollsThisRound set by first player`() {
         val player1 = makePlayer("Alice")
         val player2 = makePlayer("Bob")
-        service.initGame(makeSession(), listOf(player1, player2))
+        startGame(player1, player2)
 
         // First player rolls twice then stands → maxRollsThisRound = 2
         service.rollDice(sessionCode, ctx(player1.id), emptyList())
@@ -413,7 +436,7 @@ class SchockenServiceTest {
     fun `lids are distributed from the stack after all players reveal`() {
         val player1 = makePlayer("Alice")
         val player2 = makePlayer("Bob")
-        service.initGame(makeSession(), listOf(player1, player2))
+        startGame(player1, player2)
 
         service.rollDice(sessionCode, ctx(player1.id), emptyList())
         service.revealHand(sessionCode, ctx(player1.id))
@@ -429,16 +452,13 @@ class SchockenServiceTest {
 
     @Test
     fun `game is marked over when only one player has lids after a round`() {
-        // A single-player game: that player is simultaneously winner and loser → immediate game over
+        // A single-player game: that player wins and loses the opening round → immediate game over
         val player = makePlayer("Alice")
-        service.initGame(makeSession(), listOf(player))
-        val ctx = ctx(player.id)
+        startGame(player)
 
-        service.rollDice(sessionCode, ctx, emptyList())
-        service.revealHand(sessionCode, ctx)
-
-        val view = service.getGameView(sessionCode, ctx)
+        val view = service.getGameView(sessionCode, ctx(player.id))
         assertTrue(view.gameOver, "Game must be over when only one player remains")
+        assertEquals(player.id.toString(), view.gameOverLoserId)
     }
 
     @Test
@@ -447,7 +467,7 @@ class SchockenServiceTest {
         // Each round pays at least 1 lid, so the stack empties within 13 rounds.
         val player1 = makePlayer("Alice")
         val player2 = makePlayer("Bob")
-        service.initGame(makeSession(), listOf(player1, player2))
+        startGame(player1, player2)
 
         val ctxById = mapOf(
             player1.id.toString() to ctx(player1.id),
@@ -490,7 +510,7 @@ class SchockenServiceTest {
     fun `the round loser starts the next round`() {
         val player1 = makePlayer("Alice")
         val player2 = makePlayer("Bob")
-        service.initGame(makeSession(), listOf(player1, player2))
+        startGame(player1, player2)
 
         service.rollDice(sessionCode, ctx(player1.id), emptyList())
         service.revealHand(sessionCode, ctx(player1.id))
@@ -511,7 +531,7 @@ class SchockenServiceTest {
     fun `rollDice at max rolls marks turn as closed and auto-advances to next player`() {
         val player1 = makePlayer("Alice")
         val player2 = makePlayer("Bob")
-        service.initGame(makeSession(), listOf(player1, player2))
+        startGame(player1, player2)
 
         repeat(3) { service.rollDice(sessionCode, ctx(player1.id), emptyList()) }
 
@@ -524,7 +544,7 @@ class SchockenServiceTest {
     @Test
     fun `rollDice at max rolls returns non-kept dice as value 0`() {
         val player = makePlayer("Alice")
-        service.initGame(makeSession(), listOf(player))
+        startGame(player, makePlayer("Bob"))
         val ctx = ctx(player.id)
 
         service.rollDice(sessionCode, ctx, emptyList())
@@ -540,7 +560,7 @@ class SchockenServiceTest {
     fun `reveal phase starts after all players use all their rolls`() {
         val player1 = makePlayer("Alice")
         val player2 = makePlayer("Bob")
-        service.initGame(makeSession(), listOf(player1, player2))
+        startGame(player1, player2)
 
         repeat(3) { service.rollDice(sessionCode, ctx(player1.id), emptyList()) }
         repeat(3) { service.rollDice(sessionCode, ctx(player2.id), emptyList()) }
@@ -554,7 +574,7 @@ class SchockenServiceTest {
     fun `geschlossen player hand is null in public view before reveal phase`() {
         val player1 = makePlayer("Alice")
         val player2 = makePlayer("Bob")
-        service.initGame(makeSession(), listOf(player1, player2))
+        startGame(player1, player2)
 
         repeat(3) { service.rollDice(sessionCode, ctx(player1.id), emptyList()) }
 
@@ -568,7 +588,7 @@ class SchockenServiceTest {
     fun `standing player hand is null in public view before reveal phase`() {
         val player1 = makePlayer("Alice")
         val player2 = makePlayer("Bob")
-        service.initGame(makeSession(), listOf(player1, player2))
+        startGame(player1, player2)
 
         service.rollDice(sessionCode, ctx(player1.id), emptyList())
         service.standPlayer(sessionCode, ctx(player1.id))
@@ -583,7 +603,7 @@ class SchockenServiceTest {
     fun `reveal phase only the queue head can reveal`() {
         val player1 = makePlayer("Alice")
         val player2 = makePlayer("Bob")
-        service.initGame(makeSession(), listOf(player1, player2))
+        startGame(player1, player2)
 
         repeat(3) { service.rollDice(sessionCode, ctx(player1.id), emptyList()) }
         repeat(3) { service.rollDice(sessionCode, ctx(player2.id), emptyList()) }
@@ -598,7 +618,7 @@ class SchockenServiceTest {
     fun `reveal phase allows queue head to reveal and advances to next`() {
         val player1 = makePlayer("Alice")
         val player2 = makePlayer("Bob")
-        service.initGame(makeSession(), listOf(player1, player2))
+        startGame(player1, player2)
 
         repeat(3) { service.rollDice(sessionCode, ctx(player1.id), emptyList()) }
         repeat(3) { service.rollDice(sessionCode, ctx(player2.id), emptyList()) }
@@ -618,7 +638,7 @@ class SchockenServiceTest {
         val player1 = makePlayer("Alice")
         val player2 = makePlayer("Bob")
         val player3 = makePlayer("Carol")
-        service.initGame(makeSession(), listOf(player1, player2, player3))
+        startGame(player1, player2, player3)
         listOf(player1, player2, player3).forEach { p ->
             repeat(3) { service.rollDice(sessionCode, ctx(p.id), emptyList()) }
         }
@@ -650,7 +670,7 @@ class SchockenServiceTest {
         // round 1 because only the loser had lids (winner stayed at 0).
         val player1 = makePlayer("Alice")
         val player2 = makePlayer("Bob")
-        service.initGame(makeSession(), listOf(player1, player2))
+        startGame(player1, player2)
 
         // Play one full round
         service.rollDice(sessionCode, ctx(player1.id), emptyList())

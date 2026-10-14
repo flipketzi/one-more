@@ -55,6 +55,29 @@ class SchockenService(
                 currentPlayerIdx = 0,
             )
         )
+
+        synchronized(state) { playOpeningRound(state) }
+    }
+
+    /**
+     * "Erster Hoch": every player throws once, automatically. It scores as a normal round —
+     * the worst throw takes the lids and starts the next round (ties: first in player order).
+     */
+    private fun playOpeningRound(game: SchockenGameState) {
+        val throws = game.playerOrder.map { info ->
+            val dice = List(DICE_COUNT) { SchockenDie(id = it, value = diceRoller.roll(), kept = false) }
+            val hand = evaluateHand(dice.map { it.value }, hadKeptDice = false)
+            game.turns.getValue(info.id).apply {
+                this.dice = dice
+                this.hand = hand
+                rollCount = 1
+                revealed = true
+            }
+            OpeningThrow(playerId = info.id, dice = dice, hand = hand)
+        }
+        val outcome = checkRoundEnd(game)
+            ?: throw IllegalStateException("Opening round must always produce a result")
+        game.openingRound = OpeningRound(throws = throws, outcome = outcome)
     }
 
     // ── Roll ─────────────────────────────────────────────────────────────────
@@ -81,6 +104,8 @@ class SchockenService(
             if (die.id in keptDieIds) die.copy(kept = true)
             else die.copy(value = diceRoller.roll(), kept = false)
         }
+        // The regular game has begun, so the opening round result is no longer current
+        game.openingRound = null
         turn.dice = updatedDice
         // Only the current combination counts: re-rolling all dice is a fresh throw again
         turn.hadKeptDice = updatedDice.any { it.kept }
@@ -231,6 +256,8 @@ class SchockenService(
             lidStack = game.lidStack,
             playerLids = game.playerOrder.associate { it.id.toString() to it.lids },
             gameOver = game.gameOver,
+            gameOverLoserId = game.gameOverLoserId?.toString(),
+            openingRound = game.openingRound?.toDto(),
         )
     }
 
@@ -289,12 +316,13 @@ class SchockenService(
         )
     }
 
-    private fun checkRoundEnd(game: SchockenGameState) {
+    /** Scores the round once every player is done; returns null while the round is still running. */
+    private fun checkRoundEnd(game: SchockenGameState): RoundOutcome? {
         val allDone = game.turns.values.all { it.revealed || it.standing || it.closed }
-        if (!allDone) return
+        if (!allDone) return null
 
         val turnsWithHands = game.turns.values.filter { it.hand != null }
-        if (turnsWithHands.isEmpty()) return
+        if (turnsWithHands.isEmpty()) return null
 
         val minRank = turnsWithHands.minOf { it.hand!!.rank }
         val maxRank = turnsWithHands.maxOf { it.hand!!.rank }
@@ -344,10 +372,12 @@ class SchockenService(
         if (activePlayers2.size <= 1) {
             val loser = activePlayers2.firstOrNull() ?: game.playerOrder.first()
             game.gameOver = true
+            game.gameOverLoserId = loser.id
             publisher.publish(game.sessionCode, GameOverEvent(loserPlayerId = loser.id.toString()))
         } else {
             startNewRound(game, activePlayers2, starterPlayerId = loserIds.first())
         }
+        return RoundOutcome(loserIds = loserIds, lidValue = lidValue)
     }
 
     private fun startNewRound(game: SchockenGameState, activePlayers: List<SchockenPlayerInfo>, starterPlayerId: UUID) {
@@ -423,7 +453,28 @@ class SchockenService(
     )
 
     private fun HandResult.toDto() = HandResultDto(name = name, lids = lids, rank = rank)
+
+    private fun OpeningRound.toDto() = OpeningRoundDto(
+        throws = throws.map { t ->
+            OpeningThrowDto(
+                playerId = t.playerId.toString(),
+                dice = t.dice.map { DieDto(it.id, it.value, it.kept) },
+                hand = t.hand.toDto(),
+            )
+        },
+        loserIds = outcome.loserIds.map { it.toString() },
+        lidValue = outcome.lidValue,
+    )
+
+    private companion object {
+        const val DICE_COUNT = 3
+    }
 }
+
+data class OpeningThrowDto(val playerId: String, val dice: List<DieDto>, val hand: HandResultDto)
+
+/** loserIds are in player order — the first one starts the next round. */
+data class OpeningRoundDto(val throws: List<OpeningThrowDto>, val loserIds: List<String>, val lidValue: Int)
 
 data class RollResponse(val dice: List<DieDto>, val rollIndex: Int)
 
@@ -449,4 +500,6 @@ data class PlayerGameViewDto(
     val lidStack: Int,
     val playerLids: Map<String, Int>,
     val gameOver: Boolean,
+    val gameOverLoserId: String?,
+    val openingRound: OpeningRoundDto?,
 )
