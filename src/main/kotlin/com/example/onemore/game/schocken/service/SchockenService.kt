@@ -15,13 +15,13 @@ import com.example.onemore.security.PlayerContext
 import org.springframework.stereotype.Service
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.random.Random
 
 @Service
 class SchockenService(
     private val sessionRepository: GameSessionRepository,
     private val playerRepository: PlayerRepository,
     private val publisher: SchockenEventPublisher,
+    private val diceRoller: DiceRoller,
 ) {
     private val games = ConcurrentHashMap<String, SchockenGameState>()
 
@@ -79,7 +79,7 @@ class SchockenService(
 
         val updatedDice = turn.dice.map { die ->
             if (die.id in keptDieIds) die.copy(kept = true)
-            else die.copy(value = Random.nextInt(1, 7), kept = false)
+            else die.copy(value = diceRoller.roll(), kept = false)
         }
         turn.dice = updatedDice
         // Only the current combination counts: re-rolling all dice is a fresh throw again

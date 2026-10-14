@@ -41,7 +41,7 @@ class SchockenServiceTest {
 
     @BeforeEach
     fun setup() {
-        service = SchockenService(sessionRepository, playerRepository, publisher)
+        service = SchockenService(sessionRepository, playerRepository, publisher, RandomDiceRoller())
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
