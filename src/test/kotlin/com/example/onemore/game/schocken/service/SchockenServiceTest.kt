@@ -430,6 +430,89 @@ class SchockenServiceTest {
         }
     }
 
+    // ── Erster Hoch (opening round) ───────────────────────────────────────────
+
+    @Test
+    fun `opening round worst throw takes the lids and starts the first round`() {
+        val alice = makePlayer("Alice")
+        val bob = makePlayer("Bob")
+        val carol = makePlayer("Carol")
+        diceRoller.script(listOf(6, 5, 2), listOf(5, 3, 2), listOf(6, 4, 2))
+        service.initGame(makeSession(), listOf(alice, bob, carol))
+
+        val view = service.getGameView(sessionCode, ctx(alice.id))
+        assertEquals(bob.id.toString(), view.playerOrder[view.currentPlayerIdx].id)
+        assertEquals(1, view.playerLids[bob.id.toString()])
+        assertEquals(12, view.lidStack)
+        val opening = view.openingRound!!
+        assertEquals(listOf("6-5-2", "5-3-2", "6-4-2"), opening.throws.map { it.hand.name })
+        assertEquals(listOf(bob.id.toString()), opening.loserIds)
+        assertEquals(1, opening.lidValue)
+    }
+
+    @Test
+    fun `opening round lid value comes from the best throw`() {
+        val alice = makePlayer("Alice")
+        val bob = makePlayer("Bob")
+        diceRoller.script(listOf(5, 3, 2), listOf(4, 4, 4))
+        service.initGame(makeSession(), listOf(alice, bob))
+
+        val view = service.getGameView(sessionCode, ctx(alice.id))
+        assertEquals(3, view.playerLids[alice.id.toString()], "General gives 3 lids")
+        assertEquals(10, view.lidStack)
+    }
+
+    @Test
+    fun `opening round tie for worst throw lets the first in player order start`() {
+        val alice = makePlayer("Alice")
+        val bob = makePlayer("Bob")
+        val carol = makePlayer("Carol")
+        diceRoller.script(listOf(6, 5, 2), listOf(5, 3, 2), listOf(5, 3, 2))
+        service.initGame(makeSession(), listOf(alice, bob, carol))
+
+        val view = service.getGameView(sessionCode, ctx(alice.id))
+        assertEquals(bob.id.toString(), view.playerOrder[view.currentPlayerIdx].id)
+        assertEquals(listOf(bob.id.toString(), carol.id.toString()), view.openingRound!!.loserIds)
+    }
+
+    @Test
+    fun `opening round Schock Out ends a two-player game immediately`() {
+        val alice = makePlayer("Alice")
+        val bob = makePlayer("Bob")
+        diceRoller.script(listOf(5, 3, 2), listOf(1, 1, 1))
+        service.initGame(makeSession(), listOf(alice, bob))
+
+        val view = service.getGameView(sessionCode, ctx(alice.id))
+        assertTrue(view.gameOver)
+        assertEquals(alice.id.toString(), view.gameOverLoserId)
+        assertEquals(13, view.playerLids[alice.id.toString()])
+        assertNotNull(view.openingRound, "Opening result must stay visible when it ended the game")
+    }
+
+    @Test
+    fun `opening round result is cleared by the first roll of the regular game`() {
+        val alice = makePlayer("Alice")
+        val bob = makePlayer("Bob")
+        startGame(alice, bob)
+        assertNotNull(service.getGameView(sessionCode, ctx(alice.id)).openingRound)
+
+        service.rollDice(sessionCode, ctx(alice.id), emptyList())
+
+        assertNull(service.getGameView(sessionCode, ctx(alice.id)).openingRound)
+    }
+
+    @Test
+    fun `players start the first regular round with fresh turns after the opening round`() {
+        val alice = makePlayer("Alice")
+        val bob = makePlayer("Bob")
+        startGame(alice, bob)
+
+        val view = service.getGameView(sessionCode, ctx(alice.id))
+        assertEquals(0, view.myRollIndex)
+        assertTrue(view.playerOrder.none { it.revealed || it.rollIndex > 0 })
+        assertNull(view.maxRollsThisRound)
+    }
+
     // ── Round end ─────────────────────────────────────────────────────────────
 
     @Test
