@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { Die, HandResult, PublicPlayerState, RollPhase } from '../types';
@@ -51,8 +51,9 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
   const [myDice, setMyDice] = useState<Die[]>([]);
   const [myRollIndex, setMyRollIndex] = useState(0);
   const [myHand, setMyHand] = useState<HandResult | null>(null);
-  const [myKeptDieIds, setMyKeptDieIds] = useState<number[]>([]);
   const [phase, setPhase] = useState<RollPhase>('IDLE');
+  // Derived from the dice so kept dice from earlier rolls stay kept on the next roll
+  const myKeptDieIds = useMemo(() => myDice.filter(d => d.kept).map(d => d.id), [myDice]);
 
   // Public game state
   const [playerOrder, setPlayerOrder] = useState<PublicPlayerState[]>([]);
@@ -161,7 +162,6 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
         setMyDice([]);
         setMyRollIndex(0);
         setMyHand(null);
-        setMyKeptDieIds([]);
         setPhase('IDLE');
         setGamePhase('ROLLING_PHASE');
         setRevealQueue([]);
@@ -239,7 +239,6 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
           setMyDice([]);
           setMyRollIndex(0);
           setMyHand(null);
-          setMyKeptDieIds([]);
         }
         break;
       }
@@ -281,7 +280,6 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
         setMyDice([]);
         setMyRollIndex(0);
         setMyHand(null);
-        setMyKeptDieIds([]);
         setGamePhase('ROLLING_PHASE');
         setRevealQueue([]);
         break;
@@ -299,9 +297,6 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
 
   const toggleKeep = useCallback((dieId: number) => {
     if (phase !== 'CUP_UP') return;
-    setMyKeptDieIds(prev =>
-      prev.includes(dieId) ? prev.filter(id => id !== dieId) : [...prev, dieId]
-    );
     setMyDice(prev =>
       prev.map(d => d.id === dieId ? { ...d, kept: !d.kept } : d)
     );
@@ -313,7 +308,6 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
       const result = await rollDice(sessionCode, myKeptDieIds);
       setMyDice(result.dice);
       setMyRollIndex(result.rollIndex);
-      setMyKeptDieIds([]);
       const maxRolls = maxRollsThisRound ?? 3;
       if (result.rollIndex >= maxRolls) {
         // Server auto-advances on a closed cup — wait for REVEAL_PHASE_STARTED or NEXT_PLAYER
