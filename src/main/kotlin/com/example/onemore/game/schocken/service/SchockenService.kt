@@ -72,6 +72,11 @@ class SchockenService(
             throw GameActionException("Maximale Anzahl an Würfen erreicht")
         }
 
+        // Dice start with placeholder values — keeping them on the first roll would skip rolling
+        if (turn.rollCount == 0 && keptDieIds.isNotEmpty()) {
+            throw GameActionException("Beim ersten Wurf können keine Würfel beiseitegelegt werden")
+        }
+
         val updatedDice = turn.dice.map { die ->
             if (die.id in keptDieIds) die.copy(kept = true)
             else die.copy(value = Random.nextInt(1, 7), kept = false)
