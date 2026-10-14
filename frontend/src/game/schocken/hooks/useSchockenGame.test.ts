@@ -37,7 +37,7 @@ vi.mock('../api/schockenApi', () => ({
   getSchockenState: (...args: unknown[]) => mockGetState(...args),
 }))
 
-import { useSchockenGame } from './useSchockenGame'
+import { ROUND_EVALUATION_MS, useSchockenGame } from './useSchockenGame'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -315,7 +315,8 @@ describe('useSchockenGame', () => {
       .toMatchObject({ status: 'WAITING', gameType: null })
   })
 
-  it('ROUND_ENDED updates lidStack and playerLids and sets roundResult', () => {
+  it('ROUND_ENDED updates lidStack and playerLids and announces roundResult after the evaluation', () => {
+    vi.useFakeTimers()
     const { result } = renderHook(() => useSchockenGame(CODE, PLAYER_ID))
     connectWs()
 
@@ -339,8 +340,14 @@ describe('useSchockenGame', () => {
 
     expect(result.current.lidStack).toBe(10)
     expect(result.current.playerLids).toEqual({ [PLAYER_ID]: 0, p2: 3 })
-    expect(result.current.roundResult).not.toBeNull()
+    expect(result.current.roundEvaluation?.result?.lidValue).toBe(3)
+    expect(result.current.roundResult).toBeNull()
+
+    act(() => { vi.advanceTimersByTime(ROUND_EVALUATION_MS) })
+
+    expect(result.current.roundEvaluation).toBeNull()
     expect(result.current.roundResult?.lidValue).toBe(3)
+    vi.useRealTimers()
   })
 
   it('ROUND_ENDED sees a PLAYER_REVEALED delivered in the same WS frame batch', () => {
@@ -380,7 +387,7 @@ describe('useSchockenGame', () => {
       }) })
     })
 
-    expect(result.current.roundResult?.winnerHandName).toBe('Schock 4')
+    expect(result.current.roundEvaluation?.result?.winnerHandName).toBe('Schock 4')
   })
 
   it('ROUND_ENDED resets revealed/standing/hand/dice/rollIndex on all players in playerOrder', () => {

@@ -11,6 +11,16 @@ export interface RoundResult {
   lidValue: number;
 }
 
+/** How long every client shows the round's throws before the result is announced. */
+export const ROUND_EVALUATION_MS = 5000;
+
+export interface RoundEvaluation {
+  /** Every player's final throw of the round, in player order. */
+  players: PublicPlayerState[];
+  /** Announced once the evaluation is over. */
+  result: RoundResult | null;
+}
+
 export interface SchockenGameHook {
   // Local UI state (own dice)
   myDice: Die[];
@@ -28,6 +38,8 @@ export interface SchockenGameHook {
   gameOver: boolean;
   loserPlayerId: string | null;
   roundResult: RoundResult | null;
+  /** Set for ROUND_EVALUATION_MS right after a round ended, before roundResult. */
+  roundEvaluation: RoundEvaluation | null;
   /** "Erster Hoch" result to show until the player dismisses it. */
   openingRound: OpeningRound | null;
 
@@ -67,6 +79,7 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
   const [gameOver, setGameOver] = useState(false);
   const [loserPlayerId, setLoserPlayerId] = useState<string | null>(null);
   const [roundResult, setRoundResult] = useState<RoundResult | null>(null);
+  const [roundEvaluation, setRoundEvaluation] = useState<RoundEvaluation | null>(null);
   const [openingRound, setOpeningRound] = useState<OpeningRound | null>(null);
 
   // Reveal phase state
@@ -84,6 +97,16 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
     playerOrderRef.current = update(playerOrderRef.current);
     setPlayerOrder(playerOrderRef.current);
   }
+
+  // Announce the round result once the evaluation has been shown long enough
+  useEffect(() => {
+    if (!roundEvaluation) return;
+    const timer = setTimeout(() => {
+      setRoundEvaluation(null);
+      setRoundResult(roundEvaluation.result);
+    }, ROUND_EVALUATION_MS);
+    return () => clearTimeout(timer);
+  }, [roundEvaluation]);
 
   // Auto-dismiss round result after 3 seconds
   useEffect(() => {
@@ -256,13 +279,15 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
             (best, p) => (!best || p.hand!.rank > best.hand!.rank) ? p : best,
             null
           );
-        if (losers.length > 0) {
-          setRoundResult({
-            loserName: losers.map(p => p.username).join(' & '),
-            winnerHandName: winner?.hand?.name ?? '',
-            lidValue,
-          });
-        }
+        const announcement = losers.length > 0
+          ? {
+              loserName: losers.map(p => p.username).join(' & '),
+              winnerHandName: winner?.hand?.name ?? '',
+              lidValue,
+            }
+          : null;
+        // Snapshot the throws before the per-player state is reset for the new round below
+        setRoundEvaluation({ players: prev.filter(p => p.hand != null), result: announcement });
 
         setLidStack(ls);
         setPlayerLids(pl);
@@ -390,6 +415,7 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
     gameOver,
     loserPlayerId,
     roundResult,
+    roundEvaluation,
     openingRound,
     gamePhase,
     revealQueue,
