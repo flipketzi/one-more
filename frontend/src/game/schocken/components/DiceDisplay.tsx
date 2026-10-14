@@ -12,6 +12,32 @@ const PIP_POSITIONS: Record<number, [number, number][]> = {
   6: [[1, 1], [1, 3], [2, 1], [2, 3], [3, 1], [3, 3]],
 };
 
+/** Pips of one die face on a 3x3 grid; place inside a relatively positioned die body. */
+export const DiePips: React.FC<{ value: number }> = ({ value }) => {
+  const pips = PIP_POSITIONS[value] ?? [];
+
+  return (
+    <div
+      className="absolute inset-2"
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gridTemplateRows: 'repeat(3, 1fr)',
+      }}
+    >
+      {pips.map(([row, col], i) => (
+        <div
+          key={i}
+          style={{ gridRow: row, gridColumn: col }}
+          className="flex items-center justify-center"
+        >
+          <div className="w-2.5 h-2.5 rounded-full bg-slate-800" />
+        </div>
+      ))}
+    </div>
+  );
+};
+
 interface SingleDieProps {
   die: Die;
   rolling: boolean;
@@ -20,8 +46,6 @@ interface SingleDieProps {
 }
 
 const SingleDie: React.FC<SingleDieProps> = ({ die, rolling, canToggle, onToggle }) => {
-  const pips = PIP_POSITIONS[die.value] ?? [];
-
   return (
     <motion.button
       onClick={canToggle ? onToggle : undefined}
@@ -43,25 +67,7 @@ const SingleDie: React.FC<SingleDieProps> = ({ die, rolling, canToggle, onToggle
       }
       className="relative w-16 h-16 rounded-2xl bg-white border-2 border-white/20 shadow-xl"
     >
-      {/* 3x3 grid for pips */}
-      <div
-        className="absolute inset-2"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gridTemplateRows: 'repeat(3, 1fr)',
-        }}
-      >
-        {pips.map(([row, col], i) => (
-          <div
-            key={i}
-            style={{ gridRow: row, gridColumn: col }}
-            className="flex items-center justify-center"
-          >
-            <div className="w-2.5 h-2.5 rounded-full bg-slate-800" />
-          </div>
-        ))}
-      </div>
+      <DiePips value={die.value} />
     </motion.button>
   );
 };
@@ -73,8 +79,6 @@ interface KeptDieProps {
 }
 
 const KeptDie: React.FC<KeptDieProps> = ({ die, canToggle, onToggle }) => {
-  const pips = PIP_POSITIONS[die.value] ?? [];
-
   return (
     <motion.button
       onClick={canToggle ? onToggle : undefined}
@@ -86,24 +90,7 @@ const KeptDie: React.FC<KeptDieProps> = ({ die, canToggle, onToggle }) => {
       transition={{ duration: 0.25 }}
       className="relative w-16 h-16 rounded-2xl bg-white border-2 shadow-xl"
     >
-      <div
-        className="absolute inset-2"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gridTemplateRows: 'repeat(3, 1fr)',
-        }}
-      >
-        {pips.map(([row, col], i) => (
-          <div
-            key={i}
-            style={{ gridRow: row, gridColumn: col }}
-            className="flex items-center justify-center"
-          >
-            <div className="w-2.5 h-2.5 rounded-full bg-slate-800" />
-          </div>
-        ))}
-      </div>
+      <DiePips value={die.value} />
     </motion.button>
   );
 };
