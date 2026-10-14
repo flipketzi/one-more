@@ -1,8 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { AvatarDisplay } from '../../../components/AvatarDisplay';
-import { getBadgeClass } from '../components/HandLabel';
-import { OpeningRound, OpeningThrow, PublicPlayerState } from '../types';
+import { ThrowRow } from '../components/ThrowRow';
+import { OpeningRound, PublicPlayerState } from '../types';
 
 interface Props {
   openingRound: OpeningRound;
@@ -12,47 +11,14 @@ interface Props {
   onDismiss: () => void;
 }
 
+const FIRST_ROW_DELAY_S = 0.4;
 const ROW_STAGGER_S = 0.15;
-
-interface ThrowRowProps {
-  openingThrow: OpeningThrow;
-  player: PublicPlayerState | undefined;
-  isLoser: boolean;
-  index: number;
-}
-
-const ThrowRow: React.FC<ThrowRowProps> = ({ openingThrow, player, isLoser, index }) => (
-  <motion.li
-    initial={{ opacity: 0, x: -24 }}
-    animate={{ opacity: 1, x: 0 }}
-    transition={{ delay: 0.4 + index * ROW_STAGGER_S, type: 'spring', stiffness: 260, damping: 24 }}
-    className={`flex items-center gap-3 px-3 py-2 rounded-xl border ${
-      isLoser ? 'bg-red-500/15 border-red-500/50' : 'bg-white/5 border-white/10'
-    }`}
-  >
-    {player && <AvatarDisplay avatarId={player.avatar} size="sm" />}
-    <span className="flex-1 text-white font-bold truncate">{player?.username ?? '?'}</span>
-    <div className="flex gap-1">
-      {[...openingThrow.dice].sort((a, b) => b.value - a.value).map(d => (
-        <span
-          key={d.id}
-          className="w-7 h-7 flex items-center justify-center rounded-md bg-white text-slate-900 text-sm font-black"
-        >
-          {d.value}
-        </span>
-      ))}
-    </div>
-    <span className={`px-2 py-0.5 rounded-full border text-xs font-bold ${getBadgeClass(openingThrow.hand.rank)}`}>
-      {openingThrow.hand.name}
-    </span>
-  </motion.li>
-);
 
 export const OpeningRoundOverlay: React.FC<Props> = ({ openingRound, players, gameOver, onDismiss }) => {
   const playerById = (id: string) => players.find(p => p.id === id);
   const loserNames = openingRound.loserIds.map(id => playerById(id)?.username ?? '?');
   const starterName = loserNames[0];
-  const resultDelayS = 0.4 + openingRound.throws.length * ROW_STAGGER_S + 0.2;
+  const resultDelayS = FIRST_ROW_DELAY_S + openingRound.throws.length * ROW_STAGGER_S + 0.2;
 
   return (
     <motion.div
@@ -79,10 +45,11 @@ export const OpeningRoundOverlay: React.FC<Props> = ({ openingRound, players, ga
         {openingRound.throws.map((t, index) => (
           <ThrowRow
             key={t.playerId}
-            openingThrow={t}
             player={playerById(t.playerId)}
+            dice={t.dice}
+            hand={t.hand}
             isLoser={openingRound.loserIds.includes(t.playerId)}
-            index={index}
+            delayS={FIRST_ROW_DELAY_S + index * ROW_STAGGER_S}
           />
         ))}
       </ul>
