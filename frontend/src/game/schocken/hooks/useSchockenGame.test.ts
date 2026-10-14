@@ -1,4 +1,4 @@
-import { renderHook, act } from '@testing-library/react'
+import { renderHook, act, waitFor } from '@testing-library/react'
 import { vi } from 'vitest'
 
 // ── Mocks (declared before imports that use them) ─────────────────────────────
@@ -99,6 +99,41 @@ describe('useSchockenGame', () => {
     const { result } = renderHook(() => useSchockenGame(CODE, PLAYER_ID))
     expect(result.current.gameOver).toBe(false)
     expect(result.current.roundResult).toBeNull()
+  })
+
+  // ── Hydration ──────────────────────────────────────────────────────────────
+
+  function makeView(overrides: object) {
+    return {
+      myDice: [], myRollIndex: 0, playerOrder: [makePlayer(PLAYER_ID, 'Alice')],
+      currentPlayerIdx: 0, maxRollsThisRound: null, lidStack: 12, playerLids: {},
+      gameOver: false, gameOverLoserId: null, openingRound: null,
+      ...overrides,
+    }
+  }
+
+  it('exposes the hydrated Erster Hoch result until it is dismissed', async () => {
+    const openingRound = {
+      throws: [{ playerId: PLAYER_ID, dice: [], hand: { name: '5-3-2', lids: 1, rank: 532 } }],
+      loserIds: [PLAYER_ID],
+      lidValue: 1,
+    }
+    mockGetState.mockResolvedValue(makeView({ openingRound }))
+
+    const { result } = renderHook(() => useSchockenGame(CODE, PLAYER_ID))
+    await waitFor(() => expect(result.current.openingRound).toEqual(openingRound))
+
+    act(() => { result.current.dismissOpeningRound() })
+    expect(result.current.openingRound).toBeNull()
+  })
+
+  it('takes the game-over loser from the hydrated state', async () => {
+    mockGetState.mockResolvedValue(makeView({ gameOver: true, gameOverLoserId: PLAYER_ID }))
+
+    const { result } = renderHook(() => useSchockenGame(CODE, PLAYER_ID))
+
+    await waitFor(() => expect(result.current.loserPlayerId).toBe(PLAYER_ID))
+    expect(result.current.gameOver).toBe(true)
   })
 
   // ── Local phase transitions ────────────────────────────────────────────────
