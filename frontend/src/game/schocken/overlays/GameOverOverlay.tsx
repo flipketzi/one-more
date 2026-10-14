@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useGame } from '../../../context/GameContext';
+import { returnToLobby } from '../api/schockenApi';
 import { PublicPlayerState } from '../types';
 
 interface Props {
@@ -9,8 +10,23 @@ interface Props {
 }
 
 export const GameOverOverlay: React.FC<Props> = ({ loserPlayerId, players }) => {
-  const { goTo } = useGame();
+  const { goTo, session, player } = useGame();
   const loser = players.find(p => p.id === loserPlayerId);
+  const isHost = session?.hostId === player?.id;
+
+  // The host ends the game server-side so the session can be restarted; everyone
+  // still on the game screen follows via GAME_ABANDONED. Guests just leave locally.
+  const handleBackToLobby = async () => {
+    if (!isHost || !session) {
+      goTo('lobby');
+      return;
+    }
+    try {
+      await returnToLobby(session.code);
+    } catch {
+      goTo('lobby');
+    }
+  };
 
   return (
     <motion.div
@@ -37,7 +53,7 @@ export const GameOverOverlay: React.FC<Props> = ({ loserPlayerId, players }) => 
       <motion.button
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
-        onClick={() => goTo('lobby')}
+        onClick={handleBackToLobby}
         className="w-full max-w-xs py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-400 text-black font-bold text-lg"
       >
         Zurück zur Lobby
