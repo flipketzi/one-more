@@ -30,10 +30,7 @@ export const useLobbyWebSocket = (sessionCode: string | null, token: string | nu
     const handleEvent = (event: LobbyEvent) => {
       switch (event.type) {
         case 'PLAYER_JOINED':
-          updateSession(prev => ({
-            ...prev,
-            players: [...prev.players.filter(p => p.id !== event.player.id), event.player],
-          }));
+          updateSession(prev => ({ ...prev, players: event.players }));
           notify(`${event.player.username} joined the party! 🎉`, 'success');
           break;
 
@@ -77,7 +74,9 @@ export const useLobbyWebSocket = (sessionCode: string | null, token: string | nu
         case 'SESSION_STARTING':
           updateSession(prev => ({ ...prev, status: 'STARTING' }));
           setStartedGameType(event.gameType);
-          goTo(event.gameType === 'KINGS_CUP' ? 'kings_cup' : 'game_started');
+          if (event.gameType === 'KINGS_CUP') goTo('kings_cup');
+          else if (event.gameType === 'SCHOCKEN') goTo('schocken');
+          else goTo('game_started');
           break;
       }
     };

@@ -103,7 +103,7 @@ class SessionService(
             .filter { it.status == PlayerStatus.ACTIVE }
             .map { PlayerResponse.from(it) }
 
-        lobbyEventPublisher.publish(PlayerJoinedEvent(session.sessionCode, PlayerResponse.from(player)))
+        lobbyEventPublisher.publish(PlayerJoinedEvent(session.sessionCode, PlayerResponse.from(player), allPlayers))
 
         return JoinSessionResponse(
             sessionId = session.id,

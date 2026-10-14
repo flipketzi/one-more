@@ -1,6 +1,8 @@
 HELP.md
 .gradle
 .claude
+CLAUDE.local.md
+CLAUDE.md
 build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
@@ -54,6 +56,9 @@ out/
 /frontend/stats.html
 
 /frontend/.eslintcache
+
+# Playwright MCP logs and screenshots
+.playwright-mcp/
 
 ### Secrets ###
 .env
