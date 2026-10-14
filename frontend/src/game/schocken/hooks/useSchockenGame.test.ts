@@ -152,6 +152,45 @@ describe('useSchockenGame', () => {
     expect(result.current.phase).not.toBe('IDLE')
   })
 
+  it('roll() keeps dice that were already kept in an earlier roll', async () => {
+    // Regression: kept ids were cleared after every roll, so dice kept before
+    // roll 2 were silently re-rolled on roll 3 while still shown as kept.
+    mockRollDice.mockResolvedValue({
+      dice: [
+        { id: 0, value: 1, kept: true },
+        { id: 1, value: 5, kept: false },
+        { id: 2, value: 3, kept: false },
+      ],
+      rollIndex: 2,
+    })
+    const { result } = renderHook(() => useSchockenGame(CODE, PLAYER_ID))
+
+    await act(async () => { await result.current.roll() })
+    await act(async () => { await result.current.roll() })
+
+    expect(mockRollDice).toHaveBeenLastCalledWith(CODE, [0])
+  })
+
+  it('toggleKeep releases a die that was kept in an earlier roll', async () => {
+    mockRollDice.mockResolvedValue({
+      dice: [
+        { id: 0, value: 1, kept: true },
+        { id: 1, value: 5, kept: false },
+        { id: 2, value: 3, kept: false },
+      ],
+      rollIndex: 2,
+    })
+    const { result } = renderHook(() => useSchockenGame(CODE, PLAYER_ID))
+
+    await act(async () => { await result.current.roll() })
+    act(() => { result.current.reveal() })
+    act(() => { result.current.onRevealComplete() })
+    act(() => { result.current.toggleKeep(0) })
+
+    expect(result.current.myKeptDieIds).toEqual([])
+    expect(result.current.myDice.find(d => d.id === 0)?.kept).toBe(false)
+  })
+
   // ── revealToAll() action ───────────────────────────────────────────────────
 
   it('revealToAll() calls revealHand API and sets phase to FINISHED', async () => {
