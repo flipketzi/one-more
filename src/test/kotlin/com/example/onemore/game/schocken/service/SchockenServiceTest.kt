@@ -3,6 +3,7 @@ package com.example.onemore.game.schocken.service
 import com.example.onemore.domain.entity.GameSession
 import com.example.onemore.domain.entity.Player
 import com.example.onemore.domain.model.PlayerRole
+import com.example.onemore.domain.model.SessionStatus
 import com.example.onemore.domain.repository.GameSessionRepository
 import com.example.onemore.domain.repository.PlayerRepository
 import com.example.onemore.exception.ForbiddenException
@@ -431,6 +432,16 @@ class SchockenServiceTest {
     }
 
     // ── Erster Hoch (opening round) ───────────────────────────────────────────
+
+    @Test
+    fun `initGame marks the session as in game so the host can return to the lobby`() {
+        // Regression: the session stayed STARTING, so return-to-lobby and restarting were rejected
+        val session = makeSession()
+        diceRoller.script(LOSING_OPENING_THROW, WINNING_OPENING_THROW)
+        service.initGame(session, listOf(makePlayer("Alice"), makePlayer("Bob")))
+
+        assertEquals(SessionStatus.IN_GAME, session.status)
+    }
 
     @Test
     fun `opening round worst throw takes the lids and starts the first round`() {
