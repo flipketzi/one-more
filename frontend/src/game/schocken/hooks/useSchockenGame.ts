@@ -48,7 +48,7 @@ export interface SchockenGameHook {
 }
 
 export function useSchockenGame(sessionCode: string, playerId: string): SchockenGameHook {
-  const { token } = useGame();
+  const { token, goTo, updateSession } = useGame();
 
   // Local UI state
   const [myDice, setMyDice] = useState<Die[]>([]);
@@ -286,6 +286,12 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
       case 'GAME_OVER': {
         setLoserPlayerId(event.loserPlayerId as string);
         setGameOver(true);
+        break;
+      }
+
+      case 'GAME_ABANDONED': {
+        updateSession(prev => ({ ...prev, status: 'WAITING', gameType: null }));
+        goTo('lobby');
         break;
       }
     }

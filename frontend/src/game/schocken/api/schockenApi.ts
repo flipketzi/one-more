@@ -11,3 +11,7 @@ export const standPlayer = (code: string) =>
 
 export const getSchockenState = (code: string) =>
   api.get(`/sessions/${code}/schocken/state`).then(r => r.data);
+
+/** Host only — ends the game for everyone (GAME_ABANDONED moves all clients to the lobby). */
+export const returnToLobby = (code: string) =>
+  api.post(`/sessions/${code}/return-to-lobby`);
