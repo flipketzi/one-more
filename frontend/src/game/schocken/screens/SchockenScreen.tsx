@@ -2,6 +2,7 @@ import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useGame } from '../../../context/GameContext';
 import { useSchockenGame } from '../hooks/useSchockenGame';
+import { returnToLobby } from '../api/schockenApi';
 import { DiceDisplay } from '../components/DiceDisplay';
 import { DiceCup } from '../components/DiceCup';
 import { HandLabel } from '../components/HandLabel';
@@ -14,6 +15,13 @@ import { RevealPhaseOverlay } from '../overlays/RevealPhaseOverlay';
 const SchockenScreenInner: React.FC = () => {
   const { session, player } = useGame();
   const game = useSchockenGame(session!.code, player!.id);
+  const isHost = session!.hostId === player!.id;
+
+  // Escape hatch when the game cannot continue (e.g. a player left mid-round)
+  const handleEndGame = async () => {
+    if (!window.confirm('Spiel für alle beenden und zurück zur Lobby?')) return;
+    await returnToLobby(session!.code).catch(() => { /* stays in game; host can retry */ });
+  };
 
   const isMyTurn = game.playerOrder[game.currentPlayerIdx]?.id === player!.id;
   // During the reveal phase the overlay takes over — hide the main cup to avoid duplicate input
@@ -35,15 +43,25 @@ const SchockenScreenInner: React.FC = () => {
           <span className="text-xl">🎲</span>
           <span className="text-white font-black text-lg">Schocken</span>
         </div>
-        {game.myRollIndex > 0 && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-sm font-bold"
-          >
-            Wurf {game.myRollIndex}/{maxRolls}
-          </motion.div>
-        )}
+        <div className="flex items-center gap-2">
+          {game.myRollIndex > 0 && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-sm font-bold"
+            >
+              Wurf {game.myRollIndex}/{maxRolls}
+            </motion.div>
+          )}
+          {isHost && (
+            <button
+              onClick={handleEndGame}
+              className="px-3 py-1 rounded-full border border-white/15 text-slate-400 text-xs font-medium hover:text-red-400 hover:border-red-500/30"
+            >
+              Beenden
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Lid tracker */}
