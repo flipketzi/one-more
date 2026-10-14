@@ -48,7 +48,9 @@ export const DiceCup: React.FC<Props> = ({ onReveal, onRevealComplete, revealing
         initial={{ y: -80, opacity: 0 }}
         animate={
           revealing
-            ? { y: -240, rotate: -15, scale: 1.1 }
+            // opacity must stay in the target: a key dropped from `animate` is animated
+            // back to `initial` separately, firing onAnimationComplete a second time.
+            ? { y: -240, rotate: -15, scale: 1.1, opacity: 1 }
             : { y: 0, opacity: 1 }
         }
         transition={
