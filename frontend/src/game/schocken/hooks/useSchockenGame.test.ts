@@ -343,6 +343,46 @@ describe('useSchockenGame', () => {
     expect(result.current.roundResult?.lidValue).toBe(3)
   })
 
+  it('ROUND_ENDED sees a PLAYER_REVEALED delivered in the same WS frame batch', () => {
+    const { result } = renderHook(() => useSchockenGame(CODE, PLAYER_ID))
+    connectWs()
+
+    fireWsEvent({
+      type: 'GAME_STARTED',
+      playerOrder: [makePlayer(PLAYER_ID, 'Alice'), makePlayer('p2', 'Bob')],
+      lidStack: 13,
+      playerLids: { [PLAYER_ID]: 0, p2: 0 },
+      currentPlayerIdx: 0,
+    })
+    fireWsEvent({
+      type: 'PLAYER_REVEALED',
+      playerId: 'p2',
+      dice: [{ id: 0, value: 1, kept: false }],
+      hand: { name: '3-2-1', lids: 1, rank: 321 },
+    })
+
+    // SockJS may deliver several STOMP frames at once — no render happens in between
+    const handler = mockSubscribe.mock.calls[0][1]
+    act(() => {
+      handler({ body: JSON.stringify({
+        type: 'PLAYER_REVEALED',
+        playerId: PLAYER_ID,
+        dice: [{ id: 0, value: 1, kept: true }],
+        hand: { name: 'Schock 4', lids: 4, rank: 9040 },
+      }) })
+      handler({ body: JSON.stringify({
+        type: 'ROUND_ENDED',
+        loserIds: ['p2'],
+        lidValue: 4,
+        lidStack: 9,
+        playerLids: { [PLAYER_ID]: 0, p2: 4 },
+        activePlayerIds: [PLAYER_ID, 'p2'],
+      }) })
+    })
+
+    expect(result.current.roundResult?.winnerHandName).toBe('Schock 4')
+  })
+
   it('ROUND_ENDED resets revealed/standing/hand/dice/rollIndex on all players in playerOrder', () => {
     const { result } = renderHook(() => useSchockenGame(CODE, PLAYER_ID))
     connectWs()
