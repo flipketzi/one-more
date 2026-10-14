@@ -390,6 +390,37 @@ describe('useSchockenGame', () => {
     expect(result.current.roundEvaluation?.result?.winnerHandName).toBe('Schock 4')
   })
 
+  it('ROUND_ENDED keeps every revealed throw in roundEvaluation after the round reset', () => {
+    const { result } = renderHook(() => useSchockenGame(CODE, PLAYER_ID))
+    connectWs()
+
+    fireWsEvent({
+      type: 'GAME_STARTED',
+      playerOrder: [makePlayer(PLAYER_ID, 'Alice'), makePlayer('p2', 'Bob')],
+      lidStack: 13,
+      playerLids: { [PLAYER_ID]: 0, p2: 0 },
+      currentPlayerIdx: 0,
+    })
+    const myDice = [{ id: 0, value: 6, kept: false }, { id: 1, value: 6, kept: true }, { id: 2, value: 1, kept: false }]
+    fireWsEvent({ type: 'PLAYER_REVEALED', playerId: PLAYER_ID, dice: myDice, hand: { name: '6-6-1', lids: 1, rank: 661 } })
+    fireWsEvent({ type: 'PLAYER_REVEALED', playerId: 'p2', dice: [], hand: { name: '3-2-1', lids: 1, rank: 321 } })
+
+    fireWsEvent({
+      type: 'ROUND_ENDED',
+      loserIds: ['p2'],
+      lidValue: 1,
+      lidStack: 12,
+      playerLids: { [PLAYER_ID]: 0, p2: 1 },
+      activePlayerIds: [PLAYER_ID, 'p2'],
+    })
+
+    expect(result.current.playerOrder[0].dice).toBeNull()
+    const evaluated = result.current.roundEvaluation!.players
+    expect(evaluated.map(p => p.id)).toEqual([PLAYER_ID, 'p2'])
+    expect(evaluated[0].dice).toEqual(myDice)
+    expect(evaluated[0].hand?.name).toBe('6-6-1')
+  })
+
   it('ROUND_ENDED resets revealed/standing/hand/dice/rollIndex on all players in playerOrder', () => {
     const { result } = renderHook(() => useSchockenGame(CODE, PLAYER_ID))
     connectWs()
