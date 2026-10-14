@@ -31,7 +31,8 @@ export const LidTracker: React.FC<Props> = ({ playerOrder, lidStack, currentPlay
         {/* Players */}
         {playerOrder.map((player, idx) => {
           const isActive = idx === currentPlayerIdx;
-          const isEliminated = player.lids === 0 && idx !== currentPlayerIdx;
+          // Without lids a player is only out once the central stack is empty
+          const isEliminated = lidStack === 0 && player.lids === 0 && idx !== currentPlayerIdx;
           const keptCount = player.dice?.filter(d => d.kept).length ?? 0;
 
           return (

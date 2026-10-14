@@ -55,13 +55,23 @@ describe('LidTracker', () => {
     expect(bobTile).toBeInTheDocument()
   })
 
-  it('applies reduced opacity to eliminated players (lids=0, not current)', () => {
+  it('applies reduced opacity to eliminated players (stack empty, lids=0, not current)', () => {
+    const players = [
+      makePlayer({ id: 'p1', username: 'Alice', lids: 3 }),
+      makePlayer({ id: 'p2', username: 'Bob', lids: 0 }),
+    ]
+    render(<LidTracker playerOrder={players} lidStack={0} currentPlayerIdx={0} />)
+    const bobTile = screen.getByText('Bob').closest('div[class*="opacity"]')
+    expect(bobTile).toBeInTheDocument()
+  })
+
+  it('does not dim players without lids while the stack still has lids', () => {
     const players = [
       makePlayer({ id: 'p1', username: 'Alice', lids: 3 }),
       makePlayer({ id: 'p2', username: 'Bob', lids: 0 }),
     ]
     render(<LidTracker playerOrder={players} lidStack={10} currentPlayerIdx={0} />)
     const bobTile = screen.getByText('Bob').closest('div[class*="opacity"]')
-    expect(bobTile).toBeInTheDocument()
+    expect(bobTile).not.toBeInTheDocument()
   })
 })
