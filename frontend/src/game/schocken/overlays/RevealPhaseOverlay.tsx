@@ -93,10 +93,8 @@ export const RevealPhaseOverlay: React.FC<Props> = ({
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      // Keep the overlay fully visible after ROUND_ENDED so players can see
-      // all hands, then fade out. The delay gives a natural pause before the
-      // new round starts (pairs with the 1.8 s RoundEndedOverlay delay).
-      exit={{ opacity: 0, transition: { delay: 1.8, duration: 0.5 } }}
+      // Fades out underneath the RoundEvaluationOverlay after ROUND_ENDED
+      exit={{ opacity: 0, transition: { duration: 0.5 } }}
       transition={{ duration: 0.35 }}
       className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col"
     >
