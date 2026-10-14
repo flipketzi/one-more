@@ -40,10 +40,10 @@ export const DiceCup: React.FC<Props> = ({ onReveal, onRevealComplete, revealing
         dragConstraints={{ top: -MAX_DRAG_PX, bottom: 0 }}
         dragElastic={0.1}
         dragMomentum={false}
-        // Released below the threshold, the cup drops back onto the table
+        // Released below the threshold, the cup drops back onto the table.
+        // No whileDrag: its reset animation would fire onAnimationComplete mid-lift.
         dragSnapToOrigin
         onDragEnd={handleDragEnd}
-        whileDrag={{ scale: 1.04 }}
         style={{ borderRadius: 16, touchAction: 'none', cursor: revealing ? 'default' : 'grab' }}
       >
         <svg
