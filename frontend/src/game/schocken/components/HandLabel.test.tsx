@@ -1,4 +1,3 @@
-import React from 'react'
 import { render, screen } from '@testing-library/react'
 
 vi.mock('framer-motion', () => import('../../../test/__mocks__/framer-motion'))
