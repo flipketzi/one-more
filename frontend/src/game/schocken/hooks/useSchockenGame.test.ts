@@ -18,8 +18,11 @@ vi.mock('@stomp/stompjs', () => ({
 
 vi.mock('sockjs-client', () => ({ default: vi.fn() }))
 
+const mockGoTo = vi.fn()
+const mockUpdateSession = vi.fn()
+
 vi.mock('../../../context/GameContext', () => ({
-  useGame: () => ({ token: 'test-token' }),
+  useGame: () => ({ token: 'test-token', goTo: mockGoTo, updateSession: mockUpdateSession }),
 }))
 
 const mockRollDice    = vi.fn()
@@ -298,6 +301,18 @@ describe('useSchockenGame', () => {
 
     expect(result.current.gameOver).toBe(true)
     expect(result.current.loserPlayerId).toBe('p2')
+  })
+
+  it('GAME_ABANDONED resets the session to WAITING and navigates to the lobby', () => {
+    renderHook(() => useSchockenGame(CODE, PLAYER_ID))
+    connectWs()
+
+    fireWsEvent({ type: 'GAME_ABANDONED' })
+
+    expect(mockGoTo).toHaveBeenCalledWith('lobby')
+    const updater = mockUpdateSession.mock.calls[0][0]
+    expect(updater({ code: CODE, status: 'IN_GAME', gameType: 'SCHOCKEN' }))
+      .toMatchObject({ status: 'WAITING', gameType: null })
   })
 
   it('ROUND_ENDED updates lidStack and playerLids and sets roundResult', () => {
