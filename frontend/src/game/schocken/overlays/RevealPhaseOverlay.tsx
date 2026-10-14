@@ -198,7 +198,7 @@ export const RevealPhaseOverlay: React.FC<Props> = ({
                   <CupSvg />
                 </motion.div>
                 <p className="text-slate-500 text-sm">
-                  Warten auf {revealer!.username}\u2026
+                  Warten auf {revealer!.username}…
                 </p>
               </motion.div>
             )}
