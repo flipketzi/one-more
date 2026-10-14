@@ -34,6 +34,11 @@ class SchockenServiceTest {
     private val sessionId: UUID = UUID.randomUUID()
     private val sessionCode = "TCODE"
 
+    private companion object {
+        // A fresh throw is Jule/General/Straße with p = 1/6, so 500 attempts never realistically miss
+        const val MAX_RANDOM_ATTEMPTS = 500
+    }
+
     @BeforeEach
     fun setup() {
         service = SchockenService(sessionRepository, playerRepository, publisher)
@@ -239,6 +244,51 @@ class SchockenServiceTest {
         val keptAfter = secondRoll.dice.first { it.id == keptDie.id }
         assertTrue(keptAfter.kept)
         assertEquals(keptDie.value, keptAfter.value)
+    }
+
+    @Test
+    fun `re-rolling all dice after keeping some counts as a fresh throw`() {
+        // Regression: hadKeptDice was never reset, so a full re-roll after keeping dice
+        // could no longer score Jule, General or Straße. Dice are random, so play until
+        // the fresh throw is one of those combinations.
+        var specialHandsSeen = 0
+        repeat(MAX_RANDOM_ATTEMPTS) {
+            if (specialHandsSeen > 0) return@repeat
+            val player1 = makePlayer("Alice")
+            val player2 = makePlayer("Bob")
+            service.initGame(makeSession(), listOf(player1, player2))
+
+            service.rollDice(sessionCode, ctx(player1.id), emptyList())
+            service.rollDice(sessionCode, ctx(player1.id), listOf(0))
+            service.rollDice(sessionCode, ctx(player1.id), emptyList())
+            repeat(3) { service.rollDice(sessionCode, ctx(player2.id), emptyList()) }
+            val hand = service.revealHand(sessionCode, ctx(player1.id))
+
+            val values = service.getGameView(sessionCode, ctx(player1.id)).playerOrder
+                .first { it.id == player1.id.toString() }.dice!!.map { it.value }
+            val freshHand = service.evaluateHand(values, hadKeptDice = false)
+            val combinedHand = service.evaluateHand(values, hadKeptDice = true)
+            assertEquals(freshHand.name, hand.name)
+            if (freshHand != combinedHand) specialHandsSeen++
+        }
+        assertTrue(specialHandsSeen > 0, "No Jule/General/Straße rolled in $MAX_RANDOM_ATTEMPTS attempts")
+    }
+
+    @Test
+    fun `keeping dice in the last roll prevents Jule General and Straße`() {
+        val player1 = makePlayer("Alice")
+        val player2 = makePlayer("Bob")
+        service.initGame(makeSession(), listOf(player1, player2))
+
+        service.rollDice(sessionCode, ctx(player1.id), emptyList())
+        service.rollDice(sessionCode, ctx(player1.id), emptyList())
+        service.rollDice(sessionCode, ctx(player1.id), listOf(0))
+        repeat(3) { service.rollDice(sessionCode, ctx(player2.id), emptyList()) }
+        val hand = service.revealHand(sessionCode, ctx(player1.id))
+
+        val values = service.getGameView(sessionCode, ctx(player1.id)).playerOrder
+            .first { it.id == player1.id.toString() }.dice!!.map { it.value }
+        assertEquals(service.evaluateHand(values, hadKeptDice = true).name, hand.name)
     }
 
     // ── revealHand ───────────────────────────────────────────────────────────
