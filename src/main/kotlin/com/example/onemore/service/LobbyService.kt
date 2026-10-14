@@ -133,6 +133,7 @@ class LobbyService(
         TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
             override fun afterCommit() {
                 gameEventPublisher.publish(GameAbandonedEvent(sessionCode))
+                schockenService.publishGameAbandoned(sessionCode)
             }
         })
     }

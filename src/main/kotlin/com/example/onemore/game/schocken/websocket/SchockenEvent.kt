@@ -67,3 +67,6 @@ class RoundEndedEvent(
 class GameOverEvent(
     val loserPlayerId: String,
 ) : SchockenEvent("GAME_OVER")
+
+/** The host returned the session to the lobby — every client leaves the game screen. */
+class GameAbandonedEvent : SchockenEvent("GAME_ABANDONED")

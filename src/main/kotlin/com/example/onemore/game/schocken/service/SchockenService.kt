@@ -270,6 +270,10 @@ class SchockenService(
         games.remove(sessionCode)
     }
 
+    fun publishGameAbandoned(sessionCode: String) {
+        publisher.publish(sessionCode, GameAbandonedEvent())
+    }
+
     // ── Private helpers ───────────────────────────────────────────────────────
 
     private fun getGame(code: String): SchockenGameState =
