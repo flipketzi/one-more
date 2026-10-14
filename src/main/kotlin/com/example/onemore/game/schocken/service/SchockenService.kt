@@ -59,8 +59,7 @@ class SchockenService(
 
     // ── Roll ─────────────────────────────────────────────────────────────────
 
-    fun rollDice(code: String, context: PlayerContext, keptDieIds: List<Int>): RollResponse {
-        val game = getGame(code)
+    fun rollDice(code: String, context: PlayerContext, keptDieIds: List<Int>): RollResponse = withGame(code) { game ->
         val turn = getTurn(game, context.playerId)
 
         val currentPlayer = game.playerOrder[game.currentPlayerIdx]
@@ -105,13 +104,12 @@ class SchockenService(
             updatedDice.map { DieDto(it.id, it.value, it.kept) }
         }
 
-        return RollResponse(dice = returnedDice, rollIndex = turn.rollCount)
+        RollResponse(dice = returnedDice, rollIndex = turn.rollCount)
     }
 
     // ── Reveal ───────────────────────────────────────────────────────────────
 
-    fun revealHand(code: String, context: PlayerContext): HandResultDto {
-        val game = getGame(code)
+    fun revealHand(code: String, context: PlayerContext): HandResultDto = withGame(code) { game ->
         val turn = getTurn(game, context.playerId)
 
         if (turn.revealed) throw GameActionException("Hand bereits aufgedeckt")
@@ -163,13 +161,12 @@ class SchockenService(
         )
 
         advanceToNextPlayer(game)
-        return hand.toDto()
+        hand.toDto()
     }
 
     // ── Stand ────────────────────────────────────────────────────────────────
 
-    fun standPlayer(code: String, context: PlayerContext): HandResultDto {
-        val game = getGame(code)
+    fun standPlayer(code: String, context: PlayerContext): HandResultDto = withGame(code) { game ->
         val turn = getTurn(game, context.playerId)
 
         val currentPlayer = game.playerOrder[game.currentPlayerIdx]
@@ -196,16 +193,15 @@ class SchockenService(
 
         advanceToNextPlayer(game)
 
-        return hand.toDto()
+        hand.toDto()
     }
 
     // ── State ────────────────────────────────────────────────────────────────
 
-    fun getGameView(code: String, context: PlayerContext): PlayerGameViewDto {
-        val game = getGame(code)
+    fun getGameView(code: String, context: PlayerContext): PlayerGameViewDto = withGame(code) { game ->
         val myTurn = game.turns[context.playerId]
 
-        return PlayerGameViewDto(
+        PlayerGameViewDto(
             myDice = myTurn?.dice?.map { DieDto(it.id, it.value, it.kept) } ?: emptyList(),
             myRollIndex = myTurn?.rollCount ?: 0,
             playerOrder = game.playerOrder.map { info ->
@@ -244,6 +240,12 @@ class SchockenService(
 
     private fun getGame(code: String): SchockenGameState =
         games[code.uppercase()] ?: throw SessionNotFoundException(code)
+
+    /** Serializes all actions on one game so concurrent requests cannot interleave on its mutable state. */
+    private inline fun <T> withGame(code: String, action: (SchockenGameState) -> T): T {
+        val game = getGame(code)
+        return synchronized(game) { action(game) }
+    }
 
     private fun getTurn(game: SchockenGameState, playerId: UUID): PlayerTurn =
         game.turns[playerId] ?: throw ForbiddenException("Du bist kein Teilnehmer dieses Spiels")
