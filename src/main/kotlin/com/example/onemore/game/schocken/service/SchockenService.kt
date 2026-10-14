@@ -13,6 +13,7 @@ import com.example.onemore.game.schocken.domain.*
 import com.example.onemore.game.schocken.websocket.*
 import com.example.onemore.security.PlayerContext
 import org.springframework.stereotype.Service
+import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
@@ -44,6 +45,10 @@ class SchockenService(
             turns = turns,
         )
         games[session.sessionCode] = state
+
+        session.status = SessionStatus.IN_GAME
+        session.updatedAt = Instant.now()
+        sessionRepository.save(session)
 
         val playerLids = playerInfos.associate { it.id.toString() to it.lids }
         publisher.publish(
