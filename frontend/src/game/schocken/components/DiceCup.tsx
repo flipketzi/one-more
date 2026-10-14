@@ -1,7 +1,10 @@
-import React, { useRef } from 'react';
-import { motion } from 'framer-motion';
+import React from 'react';
+import { motion, PanInfo } from 'framer-motion';
 
-const HOLD_DURATION_MS = 800;
+/** Upward drag distance (px) after which letting go lifts the cup completely. */
+const LIFT_THRESHOLD_PX = 70;
+/** How far the cup follows the pointer before it stops moving up. */
+const MAX_DRAG_PX = 140;
 
 interface Props {
   onReveal: () => void;
@@ -10,41 +13,13 @@ interface Props {
 }
 
 export const DiceCup: React.FC<Props> = ({ onReveal, onRevealComplete, revealing }) => {
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const glowRef = useRef<HTMLDivElement>(null);
-
-  const startHold = () => {
-    if (revealing) return;
-    const startTime = Date.now();
-    intervalRef.current = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      const p = Math.min(elapsed / HOLD_DURATION_MS, 1);
-      // Apply glow directly to DOM — no React re-render
-      if (glowRef.current) {
-        glowRef.current.style.boxShadow =
-          `0 0 0 2px rgba(245,158,11,${p}), 0 0 20px 4px rgba(245,158,11,${p * 0.4})`;
-      }
-      if (p >= 1) {
-        clearInterval(intervalRef.current!);
-        intervalRef.current = null;
-        if (glowRef.current) glowRef.current.style.boxShadow = '';
-        onReveal();
-      }
-    }, 16);
-  };
-
-  const cancelHold = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    if (glowRef.current) glowRef.current.style.boxShadow = '';
+  const handleDragEnd = (_: PointerEvent | MouseEvent | TouchEvent, info: PanInfo) => {
+    if (info.offset.y <= -LIFT_THRESHOLD_PX) onReveal();
   };
 
   return (
     <div className="flex flex-col items-center gap-3">
       <motion.div
-        ref={glowRef}
         initial={{ y: -80, opacity: 0 }}
         animate={
           revealing
@@ -61,10 +36,15 @@ export const DiceCup: React.FC<Props> = ({ onReveal, onRevealComplete, revealing
         onAnimationComplete={() => {
           if (revealing) onRevealComplete();
         }}
-        style={{ borderRadius: 16 }}
-        onPointerDown={startHold}
-        onPointerUp={cancelHold}
-        onPointerLeave={cancelHold}
+        drag={revealing ? false : 'y'}
+        dragConstraints={{ top: -MAX_DRAG_PX, bottom: 0 }}
+        dragElastic={0.1}
+        dragMomentum={false}
+        // Released below the threshold, the cup drops back onto the table
+        dragSnapToOrigin
+        onDragEnd={handleDragEnd}
+        whileDrag={{ scale: 1.04 }}
+        style={{ borderRadius: 16, touchAction: 'none', cursor: revealing ? 'default' : 'grab' }}
       >
         <svg
           width={220}
@@ -109,7 +89,7 @@ export const DiceCup: React.FC<Props> = ({ onReveal, onRevealComplete, revealing
       </motion.div>
 
       {!revealing && (
-        <p className="text-slate-500 text-xs select-none">Gedrückt halten zum Heben</p>
+        <p className="text-slate-500 text-xs select-none">↑ Becher nach oben ziehen zum Heben</p>
       )}
     </div>
   );
