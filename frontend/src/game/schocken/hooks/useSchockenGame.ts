@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { Die, HandResult, PublicPlayerState, RollPhase } from '../types';
+import { Die, HandResult, OpeningRound, PlayerGameView, PublicPlayerState, RollPhase } from '../types';
 import { rollDice, revealHand, standPlayer, getSchockenState } from '../api/schockenApi';
 import { useGame } from '../../../context/GameContext';
 
@@ -28,6 +28,8 @@ export interface SchockenGameHook {
   gameOver: boolean;
   loserPlayerId: string | null;
   roundResult: RoundResult | null;
+  /** "Erster Hoch" result to show until the player dismisses it. */
+  openingRound: OpeningRound | null;
 
   // Reveal phase state
   gamePhase: 'ROLLING_PHASE' | 'REVEAL_PHASE';
@@ -42,6 +44,7 @@ export interface SchockenGameHook {
   revealToAll: () => Promise<void>;  // explicit public reveal → API call
   revealCup: () => Promise<void>;    // reveal phase: lift cup and broadcast hand
   stand: () => Promise<void>;
+  dismissOpeningRound: () => void;
 }
 
 export function useSchockenGame(sessionCode: string, playerId: string): SchockenGameHook {
@@ -64,6 +67,7 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
   const [gameOver, setGameOver] = useState(false);
   const [loserPlayerId, setLoserPlayerId] = useState<string | null>(null);
   const [roundResult, setRoundResult] = useState<RoundResult | null>(null);
+  const [openingRound, setOpeningRound] = useState<OpeningRound | null>(null);
 
   // Reveal phase state
   const [gamePhase, setGamePhase] = useState<'ROLLING_PHASE' | 'REVEAL_PHASE'>('ROLLING_PHASE');
@@ -96,16 +100,7 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionCode]);
 
-  function applyFullState(state: {
-    myDice: Die[];
-    myRollIndex: number;
-    playerOrder: PublicPlayerState[];
-    currentPlayerIdx: number;
-    maxRollsThisRound: number | null;
-    lidStack: number;
-    playerLids: Record<string, number>;
-    gameOver: boolean;
-  }) {
+  function applyFullState(state: PlayerGameView) {
     setMyDice(state.myDice);
     setMyRollIndex(state.myRollIndex);
     setPlayerOrder(state.playerOrder);
@@ -114,6 +109,9 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
     setLidStack(state.lidStack);
     setPlayerLids(state.playerLids);
     setGameOver(state.gameOver);
+    setLoserPlayerId(state.gameOverLoserId);
+    // The opening round is played server-side before we subscribe, so it only arrives here
+    setOpeningRound(state.openingRound);
 
     // Restore phase from server state for own player
     const me = state.playerOrder.find(p => p.id === playerId);
@@ -369,6 +367,10 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
     }
   }, [sessionCode]);
 
+  const dismissOpeningRound = useCallback(() => {
+    setOpeningRound(null);
+  }, []);
+
   return {
     myDice,
     myRollIndex,
@@ -383,6 +385,7 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
     gameOver,
     loserPlayerId,
     roundResult,
+    openingRound,
     gamePhase,
     revealQueue,
     currentRevealerId,
@@ -393,5 +396,6 @@ export function useSchockenGame(sessionCode: string, playerId: string): Schocken
     revealToAll,
     revealCup,
     stand,
+    dismissOpeningRound,
   };
 }

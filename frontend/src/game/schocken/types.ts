@@ -25,6 +25,19 @@ export interface PublicPlayerState {
   dice: Die[] | null;
 }
 
+export interface OpeningThrow {
+  playerId: string;
+  dice: Die[];
+  hand: HandResult;
+}
+
+/** "Erster Hoch" result. loserIds are in player order — the first one starts the game. */
+export interface OpeningRound {
+  throws: OpeningThrow[];
+  loserIds: string[];
+  lidValue: number;
+}
+
 export interface PlayerGameView {
   myDice: Die[];
   myRollIndex: number;
@@ -34,4 +47,6 @@ export interface PlayerGameView {
   lidStack: number;
   playerLids: Record<string, number>;
   gameOver: boolean;
+  gameOverLoserId: string | null;
+  openingRound: OpeningRound | null;
 }
