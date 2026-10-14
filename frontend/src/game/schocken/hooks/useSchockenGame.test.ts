@@ -202,6 +202,18 @@ describe('useSchockenGame', () => {
 
     expect(mockRevealHand).toHaveBeenCalledWith(CODE)
     expect(result.current.phase).toBe('FINISHED')
+  })
+
+  it('revealToAll() takes the own hand from the PLAYER_REVEALED event, not the API response', async () => {
+    const hand = { name: 'Schock 4', lids: 4, rank: 9040 }
+    mockRevealHand.mockResolvedValue(hand)
+
+    const { result } = renderHook(() => useSchockenGame(CODE, PLAYER_ID))
+    connectWs()
+    await act(async () => { await result.current.revealToAll() })
+    expect(result.current.myHand).toBeNull()
+
+    fireWsEvent({ type: 'PLAYER_REVEALED', playerId: PLAYER_ID, dice: [], hand })
     expect(result.current.myHand).toEqual(hand)
   })
 
