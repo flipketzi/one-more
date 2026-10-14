@@ -37,7 +37,10 @@ export const DiceCup: React.FC<Props> = ({ onReveal, onRevealComplete, revealing
         onAnimationComplete={() => {
           if (revealing) onRevealComplete();
         }}
-        drag={revealing ? false : 'y'}
+        // Keep `drag` constant: toggling it off mid-life leaves a registration with the
+        // parent AnimatePresence that never completes, so the cup is never removed.
+        drag="y"
+        dragListener={!revealing}
         dragConstraints={{ top: -MAX_DRAG_PX, bottom: 0 }}
         dragElastic={0.1}
         dragMomentum={false}
