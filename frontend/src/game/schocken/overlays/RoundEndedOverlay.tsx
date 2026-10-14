@@ -16,7 +16,8 @@ export const RoundEndedOverlay: React.FC<Props> = ({ roundResult }) => {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -20, scale: 0.95 }}
           transition={{ duration: 0.3, ease: 'easeOut' }}
-          className="fixed inset-x-4 bottom-28 z-40 mx-auto max-w-sm rounded-2xl bg-slate-800/95 border border-white/10 p-5 shadow-2xl backdrop-blur-sm"
+          // Above the reveal-phase overlay (z-50), which lingers while fading out after ROUND_ENDED
+          className="fixed inset-x-4 bottom-28 z-[60] mx-auto max-w-sm rounded-2xl bg-slate-800/95 border border-white/10 p-5 shadow-2xl backdrop-blur-sm"
         >
           <div className="flex flex-col items-center gap-1 text-center">
             <p className="text-slate-400 text-sm font-medium">Rundenende</p>
