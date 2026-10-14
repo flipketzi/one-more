@@ -7,6 +7,7 @@ import { DiceCup } from '../components/DiceCup';
 import { HandLabel } from '../components/HandLabel';
 import { LidTracker } from '../components/LidTracker';
 import { GameOverOverlay } from '../overlays/GameOverOverlay';
+import { OpeningRoundOverlay } from '../overlays/OpeningRoundOverlay';
 import { RoundEndedOverlay } from '../overlays/RoundEndedOverlay';
 import { RevealPhaseOverlay } from '../overlays/RevealPhaseOverlay';
 
@@ -203,7 +204,19 @@ const SchockenScreenInner: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {game.gameOver && game.loserPlayerId && (
+      <AnimatePresence>
+        {game.openingRound && (
+          <OpeningRoundOverlay
+            key="opening-round"
+            openingRound={game.openingRound}
+            players={game.playerOrder}
+            gameOver={game.gameOver}
+            onDismiss={game.dismissOpeningRound}
+          />
+        )}
+      </AnimatePresence>
+
+      {game.gameOver && game.loserPlayerId && !game.openingRound && (
         <GameOverOverlay loserPlayerId={game.loserPlayerId} players={game.playerOrder} />
       )}
     </div>
