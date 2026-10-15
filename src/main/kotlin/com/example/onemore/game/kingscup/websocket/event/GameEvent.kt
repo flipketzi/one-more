@@ -14,7 +14,7 @@ class CardDrawnEvent(
     val drawnByPlayerId: String,
     val drawnByUsername: String,
     val phase: String,
-    /** Rhyme seed or category for a 9 or 10, null otherwise. */
+    /** Rhyme seed or category key for a 9 or 10, null otherwise. */
     val pendingCategory: String?
 ) : GameEvent("CARD_DRAWN", sessionCode)
 

@@ -1,5 +1,6 @@
 package com.example.onemore.game.kingscup.util
 
+/** Translation keys — the client renders the localized word. */
 object KingsCupData {
     val RHYME_SEEDS = listOf(
         "cat", "day", "night", "beer", "love", "moon", "hat",
@@ -7,9 +8,9 @@ object KingsCupData {
     )
 
     val CATEGORIES = listOf(
-        "Countries", "Car brands", "Pizza toppings", "Superheroes",
-        "Things in a kitchen", "Types of beer", "Animal sounds", "Famous athletes",
-        "Things at a beach", "Movie villains", "TV shows", "Cocktail names", "Board games", "App names"
+        "countries", "car_brands", "pizza_toppings", "superheroes",
+        "kitchen_things", "beer_types", "animal_sounds", "athletes",
+        "beach_things", "movie_villains", "tv_shows", "cocktails", "board_games", "apps"
     )
 
     fun randomRhymeSeed() = RHYME_SEEDS.random()
