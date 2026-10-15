@@ -13,5 +13,5 @@ export const SECONDARY_BUTTON =
 export const DICE_TRAY =
   'rounded-[28px] bg-pub-felt border-[6px] border-pub-leather shadow-[inset_0_4px_18px_rgba(0,0,0,0.55)]';
 
-/** Full-screen overlay backdrop: the bar counter, slightly see-through. */
-export const OVERLAY_BACKDROP = 'fixed inset-0 bg-pub-wood/95 text-pub-foam font-pub-body';
+/** Full-screen overlay backdrop: the bar counter, opaque so the table below does not show through. */
+export const OVERLAY_BACKDROP = 'fixed inset-0 bg-pub-wood text-pub-foam font-pub-body';

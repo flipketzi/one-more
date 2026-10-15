@@ -116,17 +116,17 @@ export const RevealPhaseOverlay: React.FC<Props> = ({
             transition={{ type: 'spring', stiffness: 200, damping: 20 }}
             className="text-center"
           >
-            {hasActiveRevealer ? (
+            {!hasActiveRevealer && <p className="text-pub-ash text-base">Alle haben aufgedeckt</p>}
+            {hasActiveRevealer && isMyTurn && (
+              <p className="font-pub font-extrabold text-4xl text-pub-foam">Du deckst auf</p>
+            )}
+            {hasActiveRevealer && !isMyTurn && (
               <>
-                <p className="text-pub-ash text-base mb-1">
-                  {isMyTurn ? 'Du deckst auf' : 'deckt auf\u2026'}
-                </p>
                 <p className="font-pub font-extrabold text-4xl text-pub-foam">
                   {revealer?.username ?? '\u2026'}
                 </p>
+                <p className="text-pub-ash text-base mt-1">deckt auf</p>
               </>
-            ) : (
-              <p className="text-pub-ash text-base">Alle haben aufgedeckt</p>
             )}
           </motion.div>
         </AnimatePresence>
@@ -181,7 +181,7 @@ export const RevealPhaseOverlay: React.FC<Props> = ({
                 transition={{ duration: 0.25 }}
                 className="absolute inset-0 flex flex-col items-center justify-center gap-3"
               >
-                <div className="opacity-40">
+                <div className="opacity-60">
                   <CupSvg />
                 </div>
                 <p className="text-pub-foam/75 text-sm">

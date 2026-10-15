@@ -37,7 +37,7 @@ export const OpeningRoundOverlay: React.FC<Props> = ({ openingRound, players, ga
         <h1 className="font-pub font-extrabold text-7xl leading-none text-pub-beer">
           Erster Hoch!
         </h1>
-        <p className="mt-3 text-pub-ash text-base">
+        <p className="mt-3 text-pub-ash text-base text-balance">
           Jeder würfelt einmal – der schlechteste Wurf fängt an
         </p>
       </motion.div>
