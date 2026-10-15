@@ -3,11 +3,15 @@ import { motion } from 'framer-motion';
 import { useLocale } from '../../../context/LocaleContext';
 
 interface Props {
+  targetUsername: string;
   assignedByUsername: string;
+  isMe: boolean;
+  /** A drawer who lost their own rhyme or category round picks themselves */
+  isSelfPick: boolean;
   onDismiss: () => void;
 }
 
-export const SipNotificationOverlay: React.FC<Props> = ({ assignedByUsername, onDismiss }) => {
+export const SipNotificationOverlay: React.FC<Props> = ({ targetUsername, assignedByUsername, isMe, isSelfPick, onDismiss }) => {
   const { t } = useLocale();
 
   useEffect(() => {
@@ -20,7 +24,7 @@ export const SipNotificationOverlay: React.FC<Props> = ({ assignedByUsername, on
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-red-600/90 cursor-pointer"
+      className={`fixed inset-0 z-50 flex flex-col items-center justify-center cursor-pointer ${isMe ? 'bg-red-600/90' : 'bg-slate-900/90'}`}
       onClick={onDismiss}
     >
       <motion.div
@@ -30,9 +34,13 @@ export const SipNotificationOverlay: React.FC<Props> = ({ assignedByUsername, on
       >
         🍺
       </motion.div>
-      <h1 className="text-white font-black text-5xl mb-3">{t.kingsCup.drink}</h1>
-      <p className="text-red-200 text-lg">{t.kingsCup.sipSaysYouDrink(assignedByUsername)}</p>
-      <p className="text-red-300 text-sm mt-8">{t.kingsCup.tapToDismiss}</p>
+      <h1 className="text-white font-black text-5xl mb-3 text-center">
+        {isMe ? t.kingsCup.drink : t.kingsCup.loserDrinks(targetUsername)}
+      </h1>
+      {isMe && !isSelfPick && (
+        <p className="text-red-200 text-lg">{t.kingsCup.sipSaysYouDrink(assignedByUsername)}</p>
+      )}
+      <p className={`text-sm mt-8 ${isMe ? 'text-red-300' : 'text-slate-400'}`}>{t.kingsCup.tapToDismiss}</p>
     </motion.div>
   );
 };

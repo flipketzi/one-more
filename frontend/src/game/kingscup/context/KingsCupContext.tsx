@@ -4,7 +4,7 @@ import { pairBuddies } from '../util/drinkingBuddies';
 
 interface KCLocalState extends KingsCupState {
   isLoading: boolean;
-  pendingSipNotification: { targetPlayerId: string; assignedByUsername: string } | null;
+  pendingSipNotification: { targetPlayerId: string; targetUsername: string; assignedByUsername: string; isSelfPick: boolean } | null;
   touchRaceResult: { loserPlayerId: string; loserUsername: string } | null;
   wordRoundResult: { loserPlayerId: string; loserUsername: string } | null;
   gameOver: { reason: GameOverReason; cupDrinkerUsername: string | null } | null;
@@ -60,7 +60,16 @@ function reducer(state: KCLocalState, action: KCAction): KCLocalState {
       return { ...state, currentCard: action.card, phase: action.phase, pendingCategory: action.pendingCategory };
 
     case 'SIP_ASSIGNED':
-      return { ...state, pendingSipNotification: { targetPlayerId: action.targetPlayerId, assignedByUsername: action.assignedByUsername } };
+      return {
+        ...state,
+        pendingSipNotification: {
+          targetPlayerId: action.targetPlayerId,
+          targetUsername: action.targetUsername,
+          assignedByUsername: action.assignedByUsername,
+          // TURN_ADVANCED follows SIP_ASSIGNED, so the current drawer is still the picker here
+          isSelfPick: action.targetPlayerId === state.currentDrawerPlayerId,
+        },
+      };
 
     case 'BUDDY_ASSIGNED':
       return { ...state, drinkingBuddies: pairBuddies(state.drinkingBuddies, action.player1Id, action.player2Id) };

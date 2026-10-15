@@ -160,10 +160,13 @@ const KingsCupScreenInner: React.FC = () => {
             cupDrinkerUsername={state.gameOver?.cupDrinkerUsername ?? null}
           />
         )}
-        {state.pendingSipNotification && state.pendingSipNotification.targetPlayerId === myPlayerId && (
+        {state.pendingSipNotification && (
           <SipNotificationOverlay
             key="sip"
+            targetUsername={state.pendingSipNotification.targetUsername}
             assignedByUsername={state.pendingSipNotification.assignedByUsername}
+            isMe={state.pendingSipNotification.targetPlayerId === myPlayerId}
+            isSelfPick={state.pendingSipNotification.isSelfPick}
             onDismiss={() => dispatch({ type: 'DISMISS_SIP_NOTIFICATION' })}
           />
         )}
