@@ -156,6 +156,7 @@ export interface Translation {
     usesLeft: (n: number) => string;
     // KingsCupScreen host button
     returnToLobby: string;
+    confirmReturnToLobby: string;
     // Player labels and the Jack rules list
     you: string;
     youSuffix: string;

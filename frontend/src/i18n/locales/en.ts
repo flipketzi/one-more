@@ -165,6 +165,7 @@ export const en: Translation = {
     backToLobby: 'Back to Lobby',
     usesLeft: (n) => `${n} left`,
     returnToLobby: 'Return to Lobby',
+    confirmReturnToLobby: 'End the game for everyone and return to the lobby?',
     you: 'You',
     youSuffix: '(you)',
     someone: 'Someone',

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { KingsCupProvider, useKingsCup } from '../context/KingsCupContext';
 import { useKingsCupWebSocket } from '../hooks/useKingsCupWebSocket';
 import { useGame } from '../../../context/GameContext';
@@ -54,6 +54,17 @@ const KingsCupScreenInner: React.FC = () => {
   const thumbQueenPlayer = state.thumbQueenId
     ? state.turnOrder.find(p => p.id === state.thumbQueenId)
     : null;
+
+  // Ends the game for everyone, so ask first
+  const handleReturnToLobby = async () => {
+    if (returningToLobby || !window.confirm(t.kingsCup.confirmReturnToLobby)) return;
+    setReturningToLobby(true);
+    try {
+      await returnToLobby(session.code);
+    } catch {
+      setReturningToLobby(false);
+    }
+  };
 
   const renderPhaseContent = () => {
     switch (state.phase) {
@@ -193,29 +204,6 @@ const KingsCupScreenInner: React.FC = () => {
         <ThumbQueenButton sessionCode={session.code} usesLeft={state.thumbQueenUsesLeft} />
       )}
 
-      {/* Return to Lobby button — host only */}
-      {isHost && (
-        <motion.button
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          disabled={returningToLobby}
-          onClick={async () => {
-            if (returningToLobby) return;
-            setReturningToLobby(true);
-            try {
-              await returnToLobby(session.code);
-            } catch {
-              setReturningToLobby(false);
-            }
-          }}
-          className="fixed bottom-24 left-4 z-40 px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-white text-xs font-bold disabled:opacity-50"
-        >
-          🚪 {t.kingsCup.returnToLobby}
-        </motion.button>
-      )}
-
       {/* Header */}
       <div className="px-4 pt-safe-top pt-4 pb-3 flex items-center justify-between border-b border-white/10">
         <div className="flex items-center gap-2">
@@ -230,6 +218,15 @@ const KingsCupScreenInner: React.FC = () => {
             <span className="text-amber-400 font-bold">👑 {state.kingsDrawn}/4</span>
           )}
           <JackRulesList rules={state.jackRules} />
+          {isHost && (
+            <button
+              onClick={handleReturnToLobby}
+              disabled={returningToLobby}
+              className="px-3 py-1 rounded-full border border-white/15 text-slate-400 text-xs font-medium hover:text-red-400 hover:border-red-500/30 disabled:opacity-50"
+            >
+              🚪 {t.kingsCup.returnToLobby}
+            </button>
+          )}
         </div>
       </div>
 

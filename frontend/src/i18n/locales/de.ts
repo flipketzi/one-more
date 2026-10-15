@@ -165,6 +165,7 @@ export const de: Translation = {
     backToLobby: 'Zurück zur Lobby',
     usesLeft: (n) => `${n} übrig`,
     returnToLobby: 'Zur Lobby',
+    confirmReturnToLobby: 'Spiel für alle beenden und zurück zur Lobby?',
     you: 'Du',
     youSuffix: '(du)',
     someone: 'Jemand',
