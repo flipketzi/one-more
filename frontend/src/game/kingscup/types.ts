@@ -19,6 +19,8 @@ export interface JackRuleDto {
   authorUsername: string;
 }
 
+export type TouchRaceType = 'CARD_FOUR' | 'QUEEN';
+
 export interface TouchRaceStateDto {
   raceId: string;
   raceType: string;
@@ -65,7 +67,7 @@ export type GameEvent =
   | { type: 'SIP_ASSIGNED'; sessionCode: string; targetPlayerId: string; targetUsername: string; assignedByUsername: string }
   | { type: 'BUDDY_ASSIGNED'; sessionCode: string; player1Id: string; player1Username: string; player2Id: string; player2Username: string }
   | { type: 'TOUCH_RACE_STARTED'; sessionCode: string; raceId: string; raceType: string; initiatorUsername: string; eligiblePlayerIds: string[]; windowSeconds: number }
-  | { type: 'TOUCH_RACE_RESULT'; sessionCode: string; raceId: string; loserPlayerId: string; loserUsername: string; touchOrder: string[] }
+  | { type: 'TOUCH_RACE_RESULT'; sessionCode: string; raceId: string; loserPlayerId: string; loserUsername: string; touchOrder: string[]; raceType: TouchRaceType }
   | { type: 'WORD_ROUND_STARTED'; sessionCode: string; roundId: string; roundType: string; seedWord: string; firstSpeakerPlayerId: string; firstSpeakerUsername: string }
   | { type: 'WORD_ROUND_TURN'; sessionCode: string; roundId: string; lastSubmission: WordSubmissionDto | null; nextSpeakerPlayerId: string; nextSpeakerUsername: string }
   | { type: 'WORD_ROUND_RESULT'; sessionCode: string; roundId: string; loserPlayerId: string; loserUsername: string }

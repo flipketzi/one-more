@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
-import { GameEvent, JackRuleDto, KingsCupState, WordSubmissionDto } from '../types';
+import { GameEvent, JackRuleDto, KingsCupState, TouchRaceType, WordSubmissionDto } from '../types';
 
 interface KCLocalState extends KingsCupState {
   isLoading: boolean;
@@ -15,7 +15,7 @@ type KCAction =
   | { type: 'SIP_ASSIGNED'; targetPlayerId: string; targetUsername: string; assignedByUsername: string }
   | { type: 'BUDDY_ASSIGNED'; player1Id: string; player2Id: string }
   | { type: 'TOUCH_RACE_STARTED'; raceId: string; raceType: string; eligiblePlayerIds: string[]; windowSeconds: number }
-  | { type: 'TOUCH_RACE_RESULT'; loserPlayerId: string; loserUsername: string; touchOrder: string[] }
+  | { type: 'TOUCH_RACE_RESULT'; loserPlayerId: string; loserUsername: string; touchOrder: string[]; raceType: TouchRaceType }
   | { type: 'WORD_ROUND_STARTED'; roundId: string; roundType: string; seedWord: string; firstSpeakerPlayerId: string; firstSpeakerUsername: string }
   | { type: 'WORD_ROUND_TURN'; roundId: string; lastSubmission: WordSubmissionDto | null; nextSpeakerPlayerId: string; nextSpeakerUsername: string }
   | { type: 'WORD_ROUND_RESULT'; loserPlayerId: string; loserUsername: string }
@@ -87,6 +87,8 @@ function reducer(state: KCLocalState, action: KCAction): KCLocalState {
     case 'TOUCH_RACE_RESULT':
       return {
         ...state,
+        // A queen race interrupts between draws; a card-four race is followed by TURN_ADVANCED
+        phase: action.raceType === 'QUEEN' ? 'WAITING_TO_DRAW' : state.phase,
         touchRace: null,
         touchRaceResult: { loserPlayerId: action.loserPlayerId, loserUsername: action.loserUsername },
       };
@@ -194,7 +196,7 @@ export const KingsCupProvider: React.FC<{ children: ReactNode }> = ({ children }
         dispatch({ type: 'TOUCH_RACE_STARTED', raceId: event.raceId, raceType: event.raceType, eligiblePlayerIds: event.eligiblePlayerIds, windowSeconds: event.windowSeconds });
         break;
       case 'TOUCH_RACE_RESULT':
-        dispatch({ type: 'TOUCH_RACE_RESULT', loserPlayerId: event.loserPlayerId, loserUsername: event.loserUsername, touchOrder: event.touchOrder });
+        dispatch({ type: 'TOUCH_RACE_RESULT', loserPlayerId: event.loserPlayerId, loserUsername: event.loserUsername, touchOrder: event.touchOrder, raceType: event.raceType });
         break;
       case 'WORD_ROUND_STARTED':
         dispatch({ type: 'WORD_ROUND_STARTED', roundId: event.roundId, roundType: event.roundType, seedWord: event.seedWord, firstSpeakerPlayerId: event.firstSpeakerPlayerId, firstSpeakerUsername: event.firstSpeakerUsername });
