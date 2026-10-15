@@ -63,7 +63,7 @@ export interface KingsCupState {
 
 export type GameEvent =
   | { type: 'GAME_INITIALIZED'; sessionCode: string }
-  | { type: 'CARD_DRAWN'; sessionCode: string; card: string; drawnByPlayerId: string; drawnByUsername: string; phase: GamePhase }
+  | { type: 'CARD_DRAWN'; sessionCode: string; card: string; drawnByPlayerId: string; drawnByUsername: string; phase: GamePhase; pendingCategory: string | null }
   | { type: 'SIP_ASSIGNED'; sessionCode: string; targetPlayerId: string; targetUsername: string; assignedByUsername: string }
   | { type: 'BUDDY_ASSIGNED'; sessionCode: string; player1Id: string; player1Username: string; player2Id: string; player2Username: string }
   | { type: 'TOUCH_RACE_STARTED'; sessionCode: string; raceId: string; raceType: string; initiatorUsername: string; eligiblePlayerIds: string[]; windowSeconds: number }

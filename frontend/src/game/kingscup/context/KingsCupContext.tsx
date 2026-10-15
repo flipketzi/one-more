@@ -12,7 +12,7 @@ interface KCLocalState extends KingsCupState {
 
 type KCAction =
   | { type: 'LOAD'; payload: KingsCupState }
-  | { type: 'CARD_DRAWN'; card: string; drawnByPlayerId: string; phase: KingsCupState['phase'] }
+  | { type: 'CARD_DRAWN'; card: string; drawnByPlayerId: string; phase: KingsCupState['phase']; pendingCategory: string | null }
   | { type: 'SIP_ASSIGNED'; targetPlayerId: string; targetUsername: string; assignedByUsername: string }
   | { type: 'BUDDY_ASSIGNED'; player1Id: string; player2Id: string }
   | { type: 'TOUCH_RACE_STARTED'; raceId: string; raceType: string; eligiblePlayerIds: string[]; windowSeconds: number }
@@ -57,7 +57,7 @@ function reducer(state: KCLocalState, action: KCAction): KCLocalState {
       return { ...state, ...action.payload, isLoading: false };
 
     case 'CARD_DRAWN':
-      return { ...state, currentCard: action.card, phase: action.phase };
+      return { ...state, currentCard: action.card, phase: action.phase, pendingCategory: action.pendingCategory };
 
     case 'SIP_ASSIGNED':
       return { ...state, pendingSipNotification: { targetPlayerId: action.targetPlayerId, assignedByUsername: action.assignedByUsername } };
@@ -178,7 +178,7 @@ export const KingsCupProvider: React.FC<{ children: ReactNode }> = ({ children }
   const dispatchGameEvent = (event: GameEvent) => {
     switch (event.type) {
       case 'CARD_DRAWN':
-        dispatch({ type: 'CARD_DRAWN', card: event.card, drawnByPlayerId: event.drawnByPlayerId, phase: event.phase });
+        dispatch({ type: 'CARD_DRAWN', card: event.card, drawnByPlayerId: event.drawnByPlayerId, phase: event.phase, pendingCategory: event.pendingCategory });
         break;
       case 'SIP_ASSIGNED':
         dispatch({ type: 'SIP_ASSIGNED', targetPlayerId: event.targetPlayerId, targetUsername: event.targetUsername, assignedByUsername: event.assignedByUsername });
