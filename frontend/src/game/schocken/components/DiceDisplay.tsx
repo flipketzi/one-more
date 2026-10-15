@@ -31,7 +31,7 @@ export const DiePips: React.FC<{ value: number }> = ({ value }) => {
           style={{ gridRow: row, gridColumn: col }}
           className="flex items-center justify-center"
         >
-          <div className="w-2.5 h-2.5 rounded-full bg-slate-800" />
+          <div className="w-2.5 h-2.5 rounded-full bg-pub-wood" />
         </div>
       ))}
     </div>
@@ -48,6 +48,7 @@ interface SingleDieProps {
 const SingleDie: React.FC<SingleDieProps> = ({ die, rolling, canToggle, onToggle }) => {
   return (
     <motion.button
+      aria-label={`Würfel ${die.value}`}
       onClick={canToggle ? onToggle : undefined}
       style={{ cursor: canToggle ? 'pointer' : 'default' }}
       animate={
@@ -65,7 +66,7 @@ const SingleDie: React.FC<SingleDieProps> = ({ die, rolling, canToggle, onToggle
           ? { duration: 0.6, ease: 'easeInOut' }
           : { duration: 0.2 }
       }
-      className="relative w-16 h-16 rounded-2xl bg-white border-2 border-white/20 shadow-xl"
+      className="relative w-16 h-16 rounded-xl bg-pub-foam shadow-[0_3px_0_rgba(0,0,0,0.35)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pub-beer"
     >
       <DiePips value={die.value} />
     </motion.button>
@@ -81,14 +82,15 @@ interface KeptDieProps {
 const KeptDie: React.FC<KeptDieProps> = ({ die, canToggle, onToggle }) => {
   return (
     <motion.button
+      aria-label={`Würfel ${die.value}, beiseitegelegt`}
       onClick={canToggle ? onToggle : undefined}
       style={{
         cursor: canToggle ? 'pointer' : 'default',
-        boxShadow: '0 0 0 2px #f59e0b, 0 0 12px 2px #f59e0b66',
+        boxShadow: '0 0 0 3px #E8A93B',
       }}
-      animate={{ rotate: -15, scale: 0.85, opacity: 0.75 }}
+      animate={{ rotate: -12, scale: 0.85 }}
       transition={{ duration: 0.25 }}
-      className="relative w-16 h-16 rounded-2xl bg-white border-2 shadow-xl"
+      className="relative w-16 h-16 rounded-xl bg-pub-foam focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-pub-foam"
     >
       <DiePips value={die.value} />
     </motion.button>
@@ -121,10 +123,10 @@ export const DiceDisplay: React.FC<Props> = ({ dice, rolling, canToggle, onToggl
         ))}
       </div>
 
-      {/* Kept dice — separate section, no rolling */}
+      {/* Kept dice — set aside on the tray's edge, no rolling */}
       {keptDice.length > 0 && (
-        <div className="flex flex-col items-center gap-2">
-          <span className="text-slate-500 text-xs font-medium tracking-wide uppercase">
+        <div className="flex flex-col items-center gap-2 pt-3 border-t border-dashed border-pub-foam/25">
+          <span className="text-pub-foam/75 text-sm">
             Beiseitegelegt
           </span>
           <div className="flex gap-4 justify-center items-center">

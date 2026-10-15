@@ -93,7 +93,7 @@ export const DiceCup: React.FC<Props> = ({ onReveal, onRevealComplete, revealing
       </motion.div>
 
       {!revealing && (
-        <p className="text-slate-500 text-xs select-none">↑ Becher nach oben ziehen zum Heben</p>
+        <p className="text-pub-foam/75 text-sm select-none">Becher nach oben ziehen zum Heben</p>
       )}
     </div>
   );

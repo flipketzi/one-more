@@ -6,26 +6,39 @@ interface Props {
   hand: HandResult;
 }
 
-export function getBadgeClass(rank: number): string {
-  if (rank >= 9000) return 'bg-amber-500/20 border-amber-500/50 text-amber-300';
-  if (rank >= 8000) return 'bg-violet-500/20 border-violet-500/50 text-violet-300';
-  if (rank >= 7100) return 'bg-blue-500/20 border-blue-500/50 text-blue-300';
-  return 'bg-slate-500/20 border-slate-500/30 text-slate-300';
+export type HandTier = 'schock' | 'general' | 'strasse' | 'plain';
+
+export function handTier(rank: number): HandTier {
+  if (rank >= 9000) return 'schock';
+  if (rank >= 8000) return 'general';
+  if (rank >= 7100) return 'strasse';
+  return 'plain';
 }
 
-export const HandLabel: React.FC<Props> = ({ hand }) => {
-  const badgeClass = getBadgeClass(hand.rank);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="flex flex-col items-center gap-2"
-    >
-      <span className="text-white font-black text-2xl">{hand.name}</span>
-      <span className={`px-3 py-1 rounded-full border text-sm font-bold ${badgeClass}`}>
-        {hand.lids === 1 ? '1 Deckel' : `${hand.lids} Deckel`}
-      </span>
-    </motion.div>
-  );
+// Stronger hands get "fuller" badges: beer, foam, felt, then just an outline
+const TIER_CLASSES: Record<HandTier, string> = {
+  schock: 'bg-pub-beer border-pub-beer text-pub-wood',
+  general: 'bg-pub-foam border-pub-foam text-pub-wood',
+  strasse: 'bg-pub-felt border-pub-foam/40 text-pub-foam',
+  plain: 'bg-transparent border-pub-ash/50 text-pub-foam',
 };
+
+export function getBadgeClass(rank: number): string {
+  return TIER_CLASSES[handTier(rank)];
+}
+
+export const HandLabel: React.FC<Props> = ({ hand }) => (
+  <motion.div
+    initial={{ opacity: 0, scale: 0.9 }}
+    animate={{ opacity: 1, scale: 1 }}
+    className="flex flex-col items-center gap-1.5"
+  >
+    <span className="font-pub font-bold text-3xl leading-none text-pub-foam">{hand.name}</span>
+    <span
+      data-tier={handTier(hand.rank)}
+      className={`px-3 py-0.5 rounded-full border text-sm font-semibold ${getBadgeClass(hand.rank)}`}
+    >
+      {hand.lids === 1 ? '1 Deckel' : `${hand.lids} Deckel`}
+    </span>
+  </motion.div>
+);
