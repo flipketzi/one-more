@@ -1,5 +1,5 @@
 import React from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import { useGame } from '../../../context/GameContext';
 import { useSchockenGame } from '../hooks/useSchockenGame';
 import { returnToLobby } from '../api/schockenApi';
@@ -204,4 +204,9 @@ const SchockenScreenInner: React.FC = () => {
   );
 };
 
-export const SchockenScreen: React.FC = () => <SchockenScreenInner />;
+// Transform animations jump to their end state for players who prefer reduced motion
+export const SchockenScreen: React.FC = () => (
+  <MotionConfig reducedMotion="user">
+    <SchockenScreenInner />
+  </MotionConfig>
+);
