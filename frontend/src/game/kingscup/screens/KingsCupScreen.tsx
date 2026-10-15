@@ -205,12 +205,12 @@ const KingsCupScreenInner: React.FC = () => {
       )}
 
       {/* Header */}
-      <div className="px-4 pt-safe-top pt-4 pb-3 flex items-center justify-between border-b border-white/10">
+      <div className="px-4 pt-safe-top pt-4 pb-3 flex items-center justify-between gap-2 border-b border-white/10 whitespace-nowrap">
         <div className="flex items-center gap-2">
           <span className="text-xl">🃏</span>
           <span className="text-white font-black text-lg">King's Cup</span>
         </div>
-        <div className="flex items-center gap-3 text-sm">
+        <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-1 sm:gap-x-3 min-w-0 text-sm">
           <span className="text-slate-400">
             <span className="text-white font-bold">{t.kingsCup.cards(state.cardsRemaining)}</span>
           </span>
@@ -222,9 +222,10 @@ const KingsCupScreenInner: React.FC = () => {
             <button
               onClick={handleReturnToLobby}
               disabled={returningToLobby}
+              aria-label={t.kingsCup.returnToLobby}
               className="px-3 py-1 rounded-full border border-white/15 text-slate-400 text-xs font-medium hover:text-red-400 hover:border-red-500/30 disabled:opacity-50"
             >
-              🚪 {t.kingsCup.returnToLobby}
+              🚪<span className="hidden sm:inline"> {t.kingsCup.returnToLobby}</span>
             </button>
           )}
         </div>
