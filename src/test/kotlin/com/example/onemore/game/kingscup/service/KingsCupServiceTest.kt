@@ -124,4 +124,30 @@ class KingsCupServiceTest {
         val expected = mapOf(anna.id.toString() to ben.id.toString(), ben.id.toString() to anna.id.toString())
         assertEquals(expected, currentState().drinkingBuddies)
     }
+
+    // ── Kings ─────────────────────────────────────────────────────────────────
+
+    @Test
+    fun `confirming the fourth king ends the game`() {
+        givenState(deck = listOf("KH", "2C")) { kingsDrawn = 3 }
+
+        service.drawCard(ctx(anna), session.sessionCode)
+        assertEquals(GamePhase.EXECUTING_DISPLAY, currentState().phase)
+
+        service.advanceTurn(ctx(anna), session.sessionCode)
+        assertEquals(GamePhase.GAME_OVER, currentState().phase)
+    }
+
+    @Test
+    fun `confirming an earlier king passes the turn on`() {
+        givenState(deck = listOf("KH", "2C")) { kingsDrawn = 2 }
+
+        service.drawCard(ctx(anna), session.sessionCode)
+        service.advanceTurn(ctx(anna), session.sessionCode)
+
+        val state = currentState()
+        assertEquals(GamePhase.WAITING_TO_DRAW, state.phase)
+        assertEquals(1, state.currentTurnIndex)
+        assertEquals(listOf("KH"), state.kingsCupContents)
+    }
 }
