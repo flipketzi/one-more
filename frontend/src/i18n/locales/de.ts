@@ -165,5 +165,11 @@ export const de: Translation = {
     backToLobby: 'Zurück zur Lobby',
     usesLeft: (n) => `${n} übrig`,
     returnToLobby: 'Zur Lobby',
+    you: 'Du',
+    youSuffix: '(du)',
+    someone: 'Jemand',
+    rulesCount: (n) => n === 1 ? '1 Regel' : `${n} Regeln`,
+    jackRulesTitle: '🃏 Bube-Regeln',
+    close: 'Schließen',
   },
 };

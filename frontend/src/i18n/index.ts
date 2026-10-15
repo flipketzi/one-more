@@ -156,6 +156,13 @@ export interface Translation {
     usesLeft: (n: number) => string;
     // KingsCupScreen host button
     returnToLobby: string;
+    // Player labels and the Jack rules list
+    you: string;
+    youSuffix: string;
+    someone: string;
+    rulesCount: (n: number) => string;
+    jackRulesTitle: string;
+    close: string;
   };
 }
 

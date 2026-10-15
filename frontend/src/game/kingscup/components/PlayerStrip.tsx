@@ -1,6 +1,7 @@
 import React from 'react';
 import { PlayerSummary } from '../types';
 import { AvatarDisplay } from '../../../components/AvatarDisplay';
+import { useLocale } from '../../../context/LocaleContext';
 
 interface Props {
   players: PlayerSummary[];
@@ -23,6 +24,7 @@ export const PlayerStrip: React.FC<Props> = ({
   onSelect,
   excludeIds = [],
 }) => {
+  const { t } = useLocale();
   return (
     <div className="flex gap-3 overflow-x-auto pb-1 px-1">
       {players.map(p => {
@@ -53,7 +55,7 @@ export const PlayerStrip: React.FC<Props> = ({
               )}
             </div>
             <span className={`text-xs font-medium truncate max-w-[56px] ${isMe ? 'text-amber-400' : 'text-slate-300'}`}>
-              {isMe ? 'You' : p.username}
+              {isMe ? t.kingsCup.you : p.username}
             </span>
           </button>
         );

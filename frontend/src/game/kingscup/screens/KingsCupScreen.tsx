@@ -49,7 +49,7 @@ const KingsCupScreenInner: React.FC = () => {
   const isMyTurn = state.currentDrawerPlayerId === myPlayerId;
   const isHost = session.hostId === myPlayerId;
   const currentDrawer = state.turnOrder.find(p => p.id === state.currentDrawerPlayerId);
-  const drawerUsername = currentDrawer?.username ?? 'Someone';
+  const drawerUsername = currentDrawer?.username ?? t.kingsCup.someone;
   const isThumbQueen = state.thumbQueenId === myPlayerId && state.thumbQueenUsesLeft > 0;
   const thumbQueenPlayer = state.thumbQueenId
     ? state.turnOrder.find(p => p.id === state.thumbQueenId)

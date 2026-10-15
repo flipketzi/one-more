@@ -86,7 +86,7 @@ export const SipPickView: React.FC<Props> = ({
           >
             <AvatarDisplay avatarId={p.avatar} size="sm" />
             <span className="text-white font-medium">{p.username}</span>
-            {p.id === myPlayerId && <span className="ml-1 text-xs text-slate-500">(you)</span>}
+            {p.id === myPlayerId && <span className="ml-1 text-xs text-slate-500">{t.kingsCup.youSuffix}</span>}
             {picked === p.id && <span className="ml-auto text-amber-400">🍺</span>}
           </button>
         ))}

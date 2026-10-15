@@ -165,5 +165,11 @@ export const en: Translation = {
     backToLobby: 'Back to Lobby',
     usesLeft: (n) => `${n} left`,
     returnToLobby: 'Return to Lobby',
+    you: 'You',
+    youSuffix: '(you)',
+    someone: 'Someone',
+    rulesCount: (n) => n === 1 ? '1 rule' : `${n} rules`,
+    jackRulesTitle: '🃏 Jack Rules',
+    close: 'Close',
   },
 };
