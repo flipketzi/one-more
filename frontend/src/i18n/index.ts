@@ -126,11 +126,6 @@ export interface Translation {
     secondsRemaining: (n: number) => string;
     playersTouched: (touched: number, total: number) => string;
     youTouched: string;
-    // WordRoundView
-    yourAnswer: string;
-    yourRhyme: string;
-    pass: string;
-    waitingForSpeakerBefore: string;
     // JackRuleSubmitView
     createRule: string;
     rulePlaceholder: string;
@@ -146,8 +141,6 @@ export interface Translation {
     raceOver: string;
     youDrink: string;
     loserDrinks: (name: string) => string;
-    brainFreeze: string;
-    roundOver: string;
     gameOver: string;
     cupDrinkerDrinks: (name: string) => string;
     deckEmpty: string;

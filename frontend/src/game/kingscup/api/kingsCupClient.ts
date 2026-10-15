@@ -16,9 +16,6 @@ export const registerTouch = (code: string, raceId: string) =>
 export const activateQueenButton = (code: string) =>
   api.post(`/sessions/${code}/game/queen-activate`);
 
-export const submitWord = (code: string, word: string | null, passed: boolean) =>
-  api.post(`/sessions/${code}/game/word-submit`, { word, passed });
-
 export const submitJackRule = (code: string, ruleText: string) =>
   api.post(`/sessions/${code}/game/submit-rule`, { ruleText });
 

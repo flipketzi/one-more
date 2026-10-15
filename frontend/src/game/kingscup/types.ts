@@ -4,7 +4,6 @@ export type GamePhase =
   | 'EXECUTING_DISPLAY'
   | 'TOUCH_RACE'
   | 'PICK_BUDDY'
-  | 'WORD_ROUND'
   | 'SUBMIT_JACK_RULE'
   | 'GAME_OVER';
 
@@ -31,21 +30,6 @@ export interface TouchRaceStateDto {
   windowSeconds: number;
 }
 
-export interface WordRoundStateDto {
-  roundId: string;
-  roundType: string;
-  seedWord: string;
-  currentSpeakerPlayerId: string;
-  submissions: WordSubmissionDto[];
-}
-
-export interface WordSubmissionDto {
-  playerId: string;
-  username: string;
-  word: string;
-  passed: boolean;
-}
-
 export interface KingsCupState {
   phase: GamePhase;
   currentDrawerPlayerId: string;
@@ -59,7 +43,6 @@ export interface KingsCupState {
   kingsDrawn: number;
   kingsCupContents: string[];
   touchRace: TouchRaceStateDto | null;
-  wordRound: WordRoundStateDto | null;
   pendingCategory: string | null;
 }
 
@@ -70,9 +53,6 @@ export type GameEvent =
   | { type: 'BUDDY_ASSIGNED'; sessionCode: string; player1Id: string; player1Username: string; player2Id: string; player2Username: string }
   | { type: 'TOUCH_RACE_STARTED'; sessionCode: string; raceId: string; raceType: string; initiatorUsername: string; eligiblePlayerIds: string[]; windowSeconds: number }
   | { type: 'TOUCH_RACE_RESULT'; sessionCode: string; raceId: string; loserPlayerId: string; loserUsername: string; touchOrder: string[]; raceType: TouchRaceType }
-  | { type: 'WORD_ROUND_STARTED'; sessionCode: string; roundId: string; roundType: string; seedWord: string; firstSpeakerPlayerId: string; firstSpeakerUsername: string }
-  | { type: 'WORD_ROUND_TURN'; sessionCode: string; roundId: string; lastSubmission: WordSubmissionDto | null; nextSpeakerPlayerId: string; nextSpeakerUsername: string }
-  | { type: 'WORD_ROUND_RESULT'; sessionCode: string; roundId: string; loserPlayerId: string; loserUsername: string }
   | { type: 'JACK_RULE_ADDED'; sessionCode: string; ruleText: string; authorUsername: string; allRules: JackRuleDto[] }
   | { type: 'THUMB_QUEEN_ASSIGNED'; sessionCode: string; queenPlayerId: string; queenUsername: string; usesLeft: number }
   | { type: 'KING_DRAWN'; sessionCode: string; kingsDrawn: number; drawerUsername: string; kingsCupContents: string[]; isLastKing: boolean; lastKingDrinkerPlayerId: string | null }

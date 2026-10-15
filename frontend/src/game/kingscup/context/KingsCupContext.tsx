@@ -1,12 +1,11 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
-import { GameEvent, GameOverReason, JackRuleDto, KingsCupState, TouchRaceType, WordSubmissionDto } from '../types';
+import { GameEvent, GameOverReason, JackRuleDto, KingsCupState, TouchRaceType } from '../types';
 import { pairBuddies } from '../util/drinkingBuddies';
 
 interface KCLocalState extends KingsCupState {
   isLoading: boolean;
   pendingSipNotification: { targetPlayerId: string; targetUsername: string; assignedByUsername: string; isSelfPick: boolean } | null;
   touchRaceResult: { loserPlayerId: string; loserUsername: string } | null;
-  wordRoundResult: { loserPlayerId: string; loserUsername: string } | null;
   gameOver: { reason: GameOverReason; cupDrinkerUsername: string | null } | null;
 }
 
@@ -17,17 +16,13 @@ type KCAction =
   | { type: 'BUDDY_ASSIGNED'; player1Id: string; player2Id: string }
   | { type: 'TOUCH_RACE_STARTED'; raceId: string; raceType: string; eligiblePlayerIds: string[]; windowSeconds: number }
   | { type: 'TOUCH_RACE_RESULT'; loserPlayerId: string; loserUsername: string; touchOrder: string[]; raceType: TouchRaceType }
-  | { type: 'WORD_ROUND_STARTED'; roundId: string; roundType: string; seedWord: string; firstSpeakerPlayerId: string; firstSpeakerUsername: string }
-  | { type: 'WORD_ROUND_TURN'; roundId: string; lastSubmission: WordSubmissionDto | null; nextSpeakerPlayerId: string; nextSpeakerUsername: string }
-  | { type: 'WORD_ROUND_RESULT'; loserPlayerId: string; loserUsername: string }
   | { type: 'JACK_RULE_ADDED'; allRules: JackRuleDto[] }
   | { type: 'THUMB_QUEEN_ASSIGNED'; queenPlayerId: string; usesLeft: number }
   | { type: 'KING_DRAWN'; kingsDrawn: number; kingsCupContents: string[] }
   | { type: 'TURN_ADVANCED'; nextDrawerPlayerId: string; cardsRemaining: number }
   | { type: 'GAME_OVER'; reason: GameOverReason; cupDrinkerUsername: string | null }
   | { type: 'DISMISS_SIP_NOTIFICATION' }
-  | { type: 'DISMISS_RACE_RESULT' }
-  | { type: 'DISMISS_WORD_RESULT' };
+  | { type: 'DISMISS_RACE_RESULT' };
 
 const initialState: KCLocalState = {
   isLoading: true,
@@ -43,11 +38,9 @@ const initialState: KCLocalState = {
   kingsDrawn: 0,
   kingsCupContents: [],
   touchRace: null,
-  wordRound: null,
   pendingCategory: null,
   pendingSipNotification: null,
   touchRaceResult: null,
-  wordRoundResult: null,
   gameOver: null,
 };
 
@@ -96,41 +89,6 @@ function reducer(state: KCLocalState, action: KCAction): KCLocalState {
         touchRaceResult: { loserPlayerId: action.loserPlayerId, loserUsername: action.loserUsername },
       };
 
-    case 'WORD_ROUND_STARTED':
-      return {
-        ...state,
-        phase: 'WORD_ROUND',
-        wordRound: {
-          roundId: action.roundId,
-          roundType: action.roundType,
-          seedWord: action.seedWord,
-          currentSpeakerPlayerId: action.firstSpeakerPlayerId,
-          submissions: [],
-        },
-      };
-
-    case 'WORD_ROUND_TURN': {
-      if (!state.wordRound) return state;
-      const updatedSubmissions = action.lastSubmission
-        ? [...state.wordRound.submissions, action.lastSubmission]
-        : state.wordRound.submissions;
-      return {
-        ...state,
-        wordRound: {
-          ...state.wordRound,
-          currentSpeakerPlayerId: action.nextSpeakerPlayerId,
-          submissions: updatedSubmissions,
-        },
-      };
-    }
-
-    case 'WORD_ROUND_RESULT':
-      return {
-        ...state,
-        wordRound: null,
-        wordRoundResult: { loserPlayerId: action.loserPlayerId, loserUsername: action.loserUsername },
-      };
-
     case 'JACK_RULE_ADDED':
       return { ...state, jackRules: action.allRules };
 
@@ -152,7 +110,6 @@ function reducer(state: KCLocalState, action: KCAction): KCLocalState {
         currentDrawerPlayerId: action.nextDrawerPlayerId,
         cardsRemaining: action.cardsRemaining,
         touchRace: null,
-        wordRound: null,
         pendingCategory: null,
       };
 
@@ -164,9 +121,6 @@ function reducer(state: KCLocalState, action: KCAction): KCLocalState {
 
     case 'DISMISS_RACE_RESULT':
       return { ...state, touchRaceResult: null };
-
-    case 'DISMISS_WORD_RESULT':
-      return { ...state, wordRoundResult: null };
 
     default:
       return state;
@@ -200,15 +154,6 @@ export const KingsCupProvider: React.FC<{ children: ReactNode }> = ({ children }
         break;
       case 'TOUCH_RACE_RESULT':
         dispatch({ type: 'TOUCH_RACE_RESULT', loserPlayerId: event.loserPlayerId, loserUsername: event.loserUsername, touchOrder: event.touchOrder, raceType: event.raceType });
-        break;
-      case 'WORD_ROUND_STARTED':
-        dispatch({ type: 'WORD_ROUND_STARTED', roundId: event.roundId, roundType: event.roundType, seedWord: event.seedWord, firstSpeakerPlayerId: event.firstSpeakerPlayerId, firstSpeakerUsername: event.firstSpeakerUsername });
-        break;
-      case 'WORD_ROUND_TURN':
-        dispatch({ type: 'WORD_ROUND_TURN', roundId: event.roundId, lastSubmission: event.lastSubmission, nextSpeakerPlayerId: event.nextSpeakerPlayerId, nextSpeakerUsername: event.nextSpeakerUsername });
-        break;
-      case 'WORD_ROUND_RESULT':
-        dispatch({ type: 'WORD_ROUND_RESULT', loserPlayerId: event.loserPlayerId, loserUsername: event.loserUsername });
         break;
       case 'JACK_RULE_ADDED':
         dispatch({ type: 'JACK_RULE_ADDED', allRules: event.allRules });

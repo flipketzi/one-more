@@ -16,12 +16,10 @@ import { DisplayRuleView } from '../views/DisplayRuleView';
 import { SipPickView } from '../views/SipPickView';
 import { BuddyPickView } from '../views/BuddyPickView';
 import { TouchRaceView } from '../views/TouchRaceView';
-import { WordRoundView } from '../views/WordRoundView';
 import { JackRuleSubmitView } from '../views/JackRuleSubmitView';
 
 import { SipNotificationOverlay } from '../overlays/SipNotificationOverlay';
 import { TouchRaceResultOverlay } from '../overlays/TouchRaceResultOverlay';
-import { WordRoundResultOverlay } from '../overlays/WordRoundResultOverlay';
 import { GameOverOverlay } from '../overlays/GameOverOverlay';
 
 const KingsCupScreenInner: React.FC = () => {
@@ -136,17 +134,6 @@ const KingsCupScreenInner: React.FC = () => {
           />
         );
 
-      case 'WORD_ROUND':
-        if (!state.wordRound) return null;
-        return (
-          <WordRoundView
-            sessionCode={session.code}
-            wordRound={state.wordRound}
-            myPlayerId={myPlayerId}
-            players={state.turnOrder}
-          />
-        );
-
       case 'SUBMIT_JACK_RULE':
         return (
           <JackRuleSubmitView
@@ -187,14 +174,6 @@ const KingsCupScreenInner: React.FC = () => {
             loserUsername={state.touchRaceResult.loserUsername}
             isMe={state.touchRaceResult.loserPlayerId === myPlayerId}
             onDismiss={() => dispatch({ type: 'DISMISS_RACE_RESULT' })}
-          />
-        )}
-        {state.wordRoundResult && (
-          <WordRoundResultOverlay
-            key="word"
-            loserUsername={state.wordRoundResult.loserUsername}
-            isMe={state.wordRoundResult.loserPlayerId === myPlayerId}
-            onDismiss={() => dispatch({ type: 'DISMISS_WORD_RESULT' })}
           />
         )}
       </AnimatePresence>
