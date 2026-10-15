@@ -1,5 +1,9 @@
 package com.example.onemore.game.kingscup.domain.model
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+
+// Persisted as JSON — tolerate fields of games stored by older versions (e.g. the removed wordRound)
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class KingsCupGameState(
     val deck: MutableList<String>,
     val turnOrder: List<String>,
@@ -13,7 +17,6 @@ data class KingsCupGameState(
     var kingsDrawn: Int = 0,
     val kingsCupContents: MutableList<String> = mutableListOf(),
     var touchRace: TouchRaceState? = null,
-    var wordRound: WordRoundState? = null,
     var pendingPickTarget: PendingPickTarget? = null,
     var pendingCategory: String? = null
 )
@@ -30,18 +33,6 @@ data class TouchRaceState(
     var resolved: Boolean = false,
     var loserId: String? = null
 )
-
-data class WordRoundState(
-    val roundId: String,
-    val roundType: WordRoundType,
-    val seedWord: String,
-    var currentSpeakerIndex: Int,
-    val submissions: MutableList<WordSubmission> = mutableListOf(),
-    var resolved: Boolean = false,
-    var loserId: String? = null
-)
-
-data class WordSubmission(val playerId: String, val username: String, val word: String, val passed: Boolean)
 
 data class JackRule(val ruleText: String, val authorName: String, val authorId: String)
 

@@ -42,13 +42,6 @@ class KingsCupController(private val kingsCupService: KingsCupService) {
         @CurrentPlayer ctx: PlayerContext
     ) = kingsCupService.activateQueenButton(ctx, code)
 
-    @PostMapping("/word-submit")
-    fun submitWord(
-        @PathVariable code: String,
-        @RequestBody request: WordSubmitRequest,
-        @CurrentPlayer ctx: PlayerContext
-    ) = kingsCupService.submitWord(ctx, code, request.word, request.passed)
-
     @PostMapping("/submit-rule")
     fun submitJackRule(
         @PathVariable code: String,

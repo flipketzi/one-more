@@ -52,30 +52,6 @@ class TouchRaceResultEvent(
     val raceType: String
 ) : GameEvent("TOUCH_RACE_RESULT", sessionCode)
 
-class WordRoundStartedEvent(
-    sessionCode: String,
-    val roundId: String,
-    val roundType: String,
-    val seedWord: String,
-    val firstSpeakerPlayerId: String,
-    val firstSpeakerUsername: String
-) : GameEvent("WORD_ROUND_STARTED", sessionCode)
-
-class WordRoundTurnEvent(
-    sessionCode: String,
-    val roundId: String,
-    val lastSubmission: WordSubmissionDto?,
-    val nextSpeakerPlayerId: String,
-    val nextSpeakerUsername: String
-) : GameEvent("WORD_ROUND_TURN", sessionCode)
-
-class WordRoundResultEvent(
-    sessionCode: String,
-    val roundId: String,
-    val loserPlayerId: String,
-    val loserUsername: String
-) : GameEvent("WORD_ROUND_RESULT", sessionCode)
-
 class JackRuleAddedEvent(
     sessionCode: String,
     val ruleText: String,
@@ -115,7 +91,6 @@ class GameOverEvent(
 
 class GameAbandonedEvent(sessionCode: String) : GameEvent("GAME_ABANDONED", sessionCode)
 
-data class WordSubmissionDto(val playerId: String, val username: String, val word: String, val passed: Boolean)
 data class JackRuleDto(val ruleText: String, val authorUsername: String)
 
 fun JackRule.toDto() = JackRuleDto(ruleText = ruleText, authorUsername = authorName)

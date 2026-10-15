@@ -15,7 +15,6 @@ data class KingsCupStateResponse(
     val kingsDrawn: Int,
     val kingsCupContents: List<String>,
     val touchRace: TouchRaceStateDto?,
-    val wordRound: WordRoundStateDto?,
     val pendingCategory: String? = null
 )
 
@@ -27,19 +26,4 @@ data class TouchRaceStateDto(
     val eligiblePlayerIds: List<String>,
     val touchedPlayerIds: List<String>,
     val windowSeconds: Int
-)
-
-data class WordRoundStateDto(
-    val roundId: String,
-    val roundType: String,
-    val seedWord: String,
-    val currentSpeakerPlayerId: String,
-    val submissions: List<WordSubmissionResponseDto>
-)
-
-data class WordSubmissionResponseDto(
-    val playerId: String,
-    val username: String,
-    val word: String,
-    val passed: Boolean
 )

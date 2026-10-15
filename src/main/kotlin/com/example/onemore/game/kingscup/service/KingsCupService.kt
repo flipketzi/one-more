@@ -494,83 +494,6 @@ class KingsCupService(
         persist(entity, state)
     }
 
-    // ── Word Round ────────────────────────────────────────────────────────────
-
-    @Transactional
-    fun submitWord(ctx: PlayerContext, code: String, word: String?, passed: Boolean) {
-        val session = requireSession(code)
-        val entity = kingsCupStateRepository.findBySessionIdForUpdate(session.id)
-            ?: throw GameActionException("No game state found for session '$code'")
-        val state = deserialize(entity.gameStateJson)
-
-        requirePhase(state, GamePhase.WORD_ROUND, "submit word")
-
-        val round = state.wordRound
-            ?: throw GameActionException("No active word round")
-        if (round.resolved) {
-            throw GameActionException("Word round already resolved")
-        }
-
-        val speakerId = state.turnOrder[round.currentSpeakerIndex]
-        if (speakerId != ctx.playerId.toString()) {
-            throw ForbiddenException("It is not your turn to speak")
-        }
-
-        val players = playerRepository.findBySessionId(session.id)
-        val playerMap = players.associateBy { it.id.toString() }
-        val speaker = playerMap[speakerId]!!
-
-        val submission = WordSubmission(
-            playerId = speakerId,
-            username = speaker.username,
-            word = word ?: "",
-            passed = passed
-        )
-        round.submissions.add(submission)
-
-        if (passed) {
-            // This player loses — they couldn't answer
-            round.resolved = true
-            round.loserId = speakerId
-            state.wordRound = null
-
-            persist(entity, state)
-
-            gameEventPublisher.publish(
-                WordRoundResultEvent(
-                    sessionCode = code,
-                    roundId = round.roundId,
-                    loserPlayerId = speakerId,
-                    loserUsername = speaker.username
-                )
-            )
-            doAdvanceTurn(state, code, entity)
-        } else {
-            // Move to next speaker (wrap around turn order)
-            val nextIndex = (round.currentSpeakerIndex + 1) % state.turnOrder.size
-            round.currentSpeakerIndex = nextIndex
-            val nextSpeakerId = state.turnOrder[nextIndex]
-            val nextSpeaker = playerMap[nextSpeakerId]!!
-
-            persist(entity, state)
-
-            gameEventPublisher.publish(
-                WordRoundTurnEvent(
-                    sessionCode = code,
-                    roundId = round.roundId,
-                    lastSubmission = WordSubmissionDto(
-                        playerId = submission.playerId,
-                        username = submission.username,
-                        word = submission.word,
-                        passed = submission.passed
-                    ),
-                    nextSpeakerPlayerId = nextSpeakerId,
-                    nextSpeakerUsername = nextSpeaker.username
-                )
-            )
-        }
-    }
-
     // ── Jack Rule ─────────────────────────────────────────────────────────────
 
     @Transactional
@@ -677,23 +600,6 @@ class KingsCupService(
                     eligiblePlayerIds = race.eligiblePlayerIds,
                     touchedPlayerIds = race.touchOrder.toList(),
                     windowSeconds = race.windowSeconds
-                )
-            },
-            wordRound = state.wordRound?.let { round ->
-                val speakerId = state.turnOrder[round.currentSpeakerIndex]
-                WordRoundStateDto(
-                    roundId = round.roundId,
-                    roundType = round.roundType.name,
-                    seedWord = round.seedWord,
-                    currentSpeakerPlayerId = speakerId,
-                    submissions = round.submissions.map { s ->
-                        WordSubmissionResponseDto(
-                            playerId = s.playerId,
-                            username = s.username,
-                            word = s.word,
-                            passed = s.passed
-                        )
-                    }
                 )
             },
             pendingCategory = state.pendingCategory
