@@ -104,4 +104,24 @@ class KingsCupServiceTest {
         assertEquals(0, state.currentTurnIndex)
         assertDoesNotThrow { service.drawCard(ctx(anna), session.sessionCode) }
     }
+
+    // ── Drinking buddies ──────────────────────────────────────────────────────
+
+    @Test
+    fun `picking a buddy dissolves both players' previous pairs`() {
+        val dave = makePlayer("Dave")
+        lenient().`when`(playerRepository.findBySessionId(session.id)).thenReturn(players + dave)
+        givenState(deck = listOf("8H", "2C")) {
+            drinkingBuddies[ben.id.toString()] = cleo.id.toString()
+            drinkingBuddies[cleo.id.toString()] = ben.id.toString()
+            drinkingBuddies[anna.id.toString()] = dave.id.toString()
+            drinkingBuddies[dave.id.toString()] = anna.id.toString()
+        }
+
+        service.drawCard(ctx(anna), session.sessionCode)
+        service.pickTarget(ctx(anna), session.sessionCode, ben.id.toString())
+
+        val expected = mapOf(anna.id.toString() to ben.id.toString(), ben.id.toString() to anna.id.toString())
+        assertEquals(expected, currentState().drinkingBuddies)
+    }
 }
