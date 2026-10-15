@@ -49,6 +49,11 @@ class KingsCupService(
     private val scheduler = Executors.newScheduledThreadPool(4)
     private val activeRaces = ConcurrentHashMap<String, ScheduledFuture<*>>()
 
+    private companion object {
+        const val THUMB_QUEEN_USES = 3
+        const val KINGS_IN_DECK = 4
+    }
+
     // ── Initialization ────────────────────────────────────────────────────────
 
     @Transactional
@@ -111,105 +116,66 @@ class KingsCupService(
 
         val card = state.deck.removeFirst()
         state.currentCard = card
-        val rank = CardDeck.rank(card)
         val players = playerRepository.findBySessionId(session.id)
         val playerMap = players.associateBy { it.id.toString() }
         val drawer = playerMap[ctx.playerId.toString()]!!
 
-        // Announce the card draw
-        routeCard(state, code, card, rank, drawer, playerMap, entity)
+        routeCard(state, code, card, drawer)
         persist(entity, state)
     }
 
-    private fun routeCard(
-        state: KingsCupGameState,
-        code: String,
-        card: String,
-        rank: String,
-        drawer: Player,
-        playerMap: Map<String, Player>,
-        entity: KingsCupState
-    ) {
+    private fun routeCard(state: KingsCupGameState, code: String, card: String, drawer: Player) {
+        val drawerId = drawer.id.toString()
+        val rank = CardDeck.rank(card)
+        state.phase = phaseForRank(rank)
         when (rank) {
-            "2" -> {
-                state.phase = GamePhase.PICK_TARGET
-                state.pendingPickTarget = PendingPickTarget(PickTargetType.SIP_PICK, drawer.id.toString())
-                gameEventPublisher.publish(CardDrawnEvent(code, card, drawer.id.toString(), drawer.username, state.phase.name))
-            }
-            "3" -> {
-                state.phase = GamePhase.EXECUTING_DISPLAY
-                gameEventPublisher.publish(CardDrawnEvent(code, card, drawer.id.toString(), drawer.username, state.phase.name))
-            }
-            "4" -> {
-                state.phase = GamePhase.TOUCH_RACE
-                gameEventPublisher.publish(CardDrawnEvent(code, card, drawer.id.toString(), drawer.username, state.phase.name))
-                val eligibleIds = state.turnOrder.toList()
-                startTouchRace(state, code, drawer, eligibleIds, TouchRaceType.CARD_FOUR)
-            }
-            "5" -> {
-                state.phase = GamePhase.EXECUTING_DISPLAY
-                gameEventPublisher.publish(CardDrawnEvent(code, card, drawer.id.toString(), drawer.username, state.phase.name))
-            }
-            "6" -> {
-                state.phase = GamePhase.EXECUTING_DISPLAY
-                gameEventPublisher.publish(CardDrawnEvent(code, card, drawer.id.toString(), drawer.username, state.phase.name))
-            }
-            "7" -> {
-                state.phase = GamePhase.EXECUTING_DISPLAY
-                gameEventPublisher.publish(CardDrawnEvent(code, card, drawer.id.toString(), drawer.username, state.phase.name))
-            }
-            "8" -> {
-                state.phase = GamePhase.PICK_BUDDY
-                state.pendingPickTarget = PendingPickTarget(PickTargetType.BUDDY_PICK, drawer.id.toString())
-                gameEventPublisher.publish(CardDrawnEvent(code, card, drawer.id.toString(), drawer.username, state.phase.name))
-            }
-            "9" -> {
-                val seed = KingsCupData.randomRhymeSeed()
-                state.phase = GamePhase.PICK_TARGET
-                state.pendingPickTarget = PendingPickTarget(PickTargetType.SIP_PICK, drawer.id.toString())
-                state.pendingCategory = seed
-                gameEventPublisher.publish(CardDrawnEvent(code, card, drawer.id.toString(), drawer.username, state.phase.name))
-            }
-            "10" -> {
-                val category = KingsCupData.randomCategory()
-                state.phase = GamePhase.PICK_TARGET
-                state.pendingPickTarget = PendingPickTarget(PickTargetType.SIP_PICK, drawer.id.toString())
-                state.pendingCategory = category
-                gameEventPublisher.publish(CardDrawnEvent(code, card, drawer.id.toString(), drawer.username, state.phase.name))
-            }
-            "J" -> {
-                state.phase = GamePhase.SUBMIT_JACK_RULE
-                gameEventPublisher.publish(CardDrawnEvent(code, card, drawer.id.toString(), drawer.username, state.phase.name))
-            }
+            "2" -> state.pendingPickTarget = PendingPickTarget(PickTargetType.SIP_PICK, drawerId)
+            "8" -> state.pendingPickTarget = PendingPickTarget(PickTargetType.BUDDY_PICK, drawerId)
+            "9" -> startWordPick(state, drawerId, KingsCupData.randomRhymeSeed())
+            "10" -> startWordPick(state, drawerId, KingsCupData.randomCategory())
             "Q" -> {
-                state.phase = GamePhase.EXECUTING_DISPLAY
-                // Invalidate previous thumb queen
-                val oldQueenId = state.thumbQueenId
-                state.thumbQueenId = drawer.id.toString()
-                state.thumbQueenUsesLeft = 3
-                gameEventPublisher.publish(CardDrawnEvent(code, card, drawer.id.toString(), drawer.username, state.phase.name))
-                gameEventPublisher.publish(
-                    ThumbQueenAssignedEvent(
-                        sessionCode = code,
-                        queenPlayerId = drawer.id.toString(),
-                        queenUsername = drawer.username,
-                        usesLeft = 3
-                    )
-                )
+                // A new queen replaces the previous one
+                state.thumbQueenId = drawerId
+                state.thumbQueenUsesLeft = THUMB_QUEEN_USES
             }
             "K" -> {
                 state.kingsDrawn++
-                // Add current card suit to cup contents
                 state.kingsCupContents.add(card)
-                val isLastKing = state.kingsDrawn >= 4
-                state.phase = GamePhase.EXECUTING_DISPLAY
+            }
+        }
 
-                val lastKingDrinker = if (isLastKing) {
-                    // Last king drawer drinks the cup
-                    drawer.id.toString()
-                } else null
+        gameEventPublisher.publish(CardDrawnEvent(code, card, drawerId, drawer.username, state.phase.name))
+        publishCardFollowUp(state, code, rank, drawer)
+    }
 
-                gameEventPublisher.publish(CardDrawnEvent(code, card, drawer.id.toString(), drawer.username, state.phase.name))
+    private fun phaseForRank(rank: String): GamePhase = when (rank) {
+        "2", "9", "10" -> GamePhase.PICK_TARGET
+        "4" -> GamePhase.TOUCH_RACE
+        "8" -> GamePhase.PICK_BUDDY
+        "J" -> GamePhase.SUBMIT_JACK_RULE
+        else -> GamePhase.EXECUTING_DISPLAY
+    }
+
+    /** The drawer plays a rhyme or category round at the table, then picks who lost. */
+    private fun startWordPick(state: KingsCupGameState, drawerId: String, word: String) {
+        state.pendingPickTarget = PendingPickTarget(PickTargetType.SIP_PICK, drawerId)
+        state.pendingCategory = word
+    }
+
+    private fun publishCardFollowUp(state: KingsCupGameState, code: String, rank: String, drawer: Player) {
+        val drawerId = drawer.id.toString()
+        when (rank) {
+            "4" -> startTouchRace(state, code, drawer, state.turnOrder.toList(), TouchRaceType.CARD_FOUR)
+            "Q" -> gameEventPublisher.publish(
+                ThumbQueenAssignedEvent(
+                    sessionCode = code,
+                    queenPlayerId = drawerId,
+                    queenUsername = drawer.username,
+                    usesLeft = state.thumbQueenUsesLeft
+                )
+            )
+            "K" -> {
+                val isLastKing = state.kingsDrawn >= KINGS_IN_DECK
                 gameEventPublisher.publish(
                     KingDrawnEvent(
                         sessionCode = code,
@@ -217,13 +183,10 @@ class KingsCupService(
                         drawerUsername = drawer.username,
                         kingsCupContents = state.kingsCupContents.toList(),
                         isLastKing = isLastKing,
-                        lastKingDrinkerPlayerId = lastKingDrinker
+                        // The last king's drawer drinks the cup
+                        lastKingDrinkerPlayerId = if (isLastKing) drawerId else null
                     )
                 )
-            }
-            "A" -> {
-                state.phase = GamePhase.EXECUTING_DISPLAY
-                gameEventPublisher.publish(CardDrawnEvent(code, card, drawer.id.toString(), drawer.username, state.phase.name))
             }
         }
     }
@@ -242,7 +205,7 @@ class KingsCupService(
 
         // Check if last king was drawn
         val card = state.currentCard
-        val isLastKing = card != null && CardDeck.rank(card) == "K" && state.kingsDrawn >= 4
+        val isLastKing = card != null && CardDeck.rank(card) == "K" && state.kingsDrawn >= KINGS_IN_DECK
         if (isLastKing) {
             state.phase = GamePhase.GAME_OVER
             persist(entity, state)
