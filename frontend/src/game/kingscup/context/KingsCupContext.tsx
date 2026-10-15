@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
 import { GameEvent, JackRuleDto, KingsCupState, TouchRaceType, WordSubmissionDto } from '../types';
+import { pairBuddies } from '../util/drinkingBuddies';
 
 interface KCLocalState extends KingsCupState {
   isLoading: boolean;
@@ -62,14 +63,7 @@ function reducer(state: KCLocalState, action: KCAction): KCLocalState {
       return { ...state, pendingSipNotification: { targetPlayerId: action.targetPlayerId, assignedByUsername: action.assignedByUsername } };
 
     case 'BUDDY_ASSIGNED':
-      return {
-        ...state,
-        drinkingBuddies: {
-          ...state.drinkingBuddies,
-          [action.player1Id]: action.player2Id,
-          [action.player2Id]: action.player1Id,
-        },
-      };
+      return { ...state, drinkingBuddies: pairBuddies(state.drinkingBuddies, action.player1Id, action.player2Id) };
 
     case 'TOUCH_RACE_STARTED':
       return {
