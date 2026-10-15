@@ -30,7 +30,7 @@ export const ThumbQueenButton: React.FC<Props> = ({ sessionCode, usesLeft }) => 
       whileTap={{ scale: 0.9 }}
       onClick={handleActivate}
       disabled={loading}
-      className="fixed bottom-24 right-4 z-40 flex flex-col items-center gap-1"
+      className="fixed bottom-36 right-4 z-40 flex flex-col items-center gap-1"
     >
       <div className="w-16 h-16 rounded-full bg-gradient-to-br from-fuchsia-500 to-purple-700 flex items-center justify-center shadow-xl border-2 border-fuchsia-400/50">
         <span className="text-2xl">👍</span>
