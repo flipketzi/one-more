@@ -22,7 +22,7 @@ export default {
           beer: '#E8A93B',      // pils — primary actions only
           foam: '#F3EBDD',      // foam, cigarette paper, dice, coasters
           ash: '#A89C90',       // secondary text
-          ember: '#E2492E',     // glowing cigarette tip — whoever drinks
+          ember: '#F26A47',     // glowing cigarette tip — whoever drinks (≥ 4.5:1 on wood and plank)
         },
       },
       backgroundImage: {
