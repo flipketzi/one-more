@@ -149,7 +149,7 @@ export const de: Translation = {
     rulePlaceholder: 'z.B. Kein Zeigen – wer zeigt, trinkt!',
     setRule: 'Regel festlegen! 📜',
     drawerMakingRule: 'Der Ziehende erstellt eine Regel…',
-    cards: (n) => `${n} Karten`,
+    cards: (n) => n === 1 ? '1 Karte' : `${n} Karten`,
     drink: 'TRINK!',
     sipSaysYouDrink: (name) => `${name} sagt: du trinkst!`,
     tapToDismiss: 'Tippen zum Schließen',

@@ -149,7 +149,7 @@ export const en: Translation = {
     rulePlaceholder: 'e.g. No pointing — if you point, you drink!',
     setRule: 'Set the Rule! 📜',
     drawerMakingRule: 'The drawer is making a rule…',
-    cards: (n) => `${n} cards`,
+    cards: (n) => n === 1 ? '1 card' : `${n} cards`,
     drink: 'DRINK!',
     sipSaysYouDrink: (name) => `${name} says you drink!`,
     tapToDismiss: 'Tap to dismiss',
