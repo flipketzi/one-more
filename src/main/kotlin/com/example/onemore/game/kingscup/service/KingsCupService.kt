@@ -144,7 +144,9 @@ class KingsCupService(
             }
         }
 
-        gameEventPublisher.publish(CardDrawnEvent(code, card, drawerId, drawer.username, state.phase.name))
+        gameEventPublisher.publish(
+            CardDrawnEvent(code, card, drawerId, drawer.username, state.phase.name, state.pendingCategory)
+        )
         publishCardFollowUp(state, code, rank, drawer)
     }
 

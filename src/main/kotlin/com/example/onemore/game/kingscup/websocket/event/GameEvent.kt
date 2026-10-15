@@ -13,7 +13,9 @@ class CardDrawnEvent(
     val card: String,
     val drawnByPlayerId: String,
     val drawnByUsername: String,
-    val phase: String
+    val phase: String,
+    /** Rhyme seed or category for a 9 or 10, null otherwise. */
+    val pendingCategory: String?
 ) : GameEvent("CARD_DRAWN", sessionCode)
 
 class SipAssignedEvent(
