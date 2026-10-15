@@ -49,8 +49,8 @@ describe('LidTracker', () => {
       makePlayer({ id: 'p2', username: 'Bob' }),
     ]
     render(<LidTracker playerOrder={players} lidStack={10} currentPlayerIdx={1} />)
-    // The tile for Bob (idx 1) should have the amber class
-    const bobTile = screen.getByText('Bob').closest('div[class*="amber"]')
+    // The tile for Bob (idx 1) is marked as the current player
+    const bobTile = screen.getByText('Bob').closest('[aria-current="true"]')
     expect(bobTile).toBeInTheDocument()
   })
 

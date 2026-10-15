@@ -17,18 +17,18 @@ export const RoundEndedOverlay: React.FC<Props> = ({ roundResult }) => {
           exit={{ opacity: 0, y: -20, scale: 0.95 }}
           transition={{ duration: 0.3, ease: 'easeOut' }}
           // Above the reveal-phase overlay (z-50), which lingers while fading out after ROUND_ENDED
-          className="fixed inset-x-4 bottom-28 z-[60] mx-auto max-w-sm rounded-2xl bg-slate-800/95 border border-white/10 p-5 shadow-2xl backdrop-blur-sm"
+          className="fixed inset-x-4 bottom-28 z-[60] mx-auto max-w-sm rounded-xl bg-pub-plank border-l-4 border-pub-ember px-5 py-4 text-pub-foam font-pub-body shadow-[0_8px_24px_rgba(0,0,0,0.5)]"
         >
           <div className="flex flex-col items-center gap-1 text-center">
-            <p className="text-slate-400 text-sm font-medium">Rundenende</p>
-            <p className="text-white font-black text-xl leading-tight">
+            <p className="text-pub-ash text-sm">Rundenende</p>
+            <p className="font-pub font-bold text-2xl leading-tight">
               {roundResult.winnerHandName}
             </p>
-            <p className="text-slate-300 text-base mt-1">
-              <span className="text-amber-400 font-bold">{roundResult.loserName}</span>
+            <p className="text-lg mt-1">
+              <span className="text-pub-ember font-semibold">{roundResult.loserName}</span>
               {' '}trinkt{' '}
-              <span className="text-amber-400 font-bold">{roundResult.lidValue}</span>
-              {' '}{roundResult.lidValue === 1 ? 'Deckel' : 'Deckel'}
+              <span className="font-semibold">{roundResult.lidValue}</span>
+              {' '}Deckel
             </p>
           </div>
         </motion.div>

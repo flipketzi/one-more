@@ -20,27 +20,27 @@ describe('HandLabel', () => {
     expect(screen.getByText('4 Deckel')).toBeInTheDocument()
   })
 
-  it('applies amber badge class for rank >= 9000 (Schock)', () => {
+  it('marks a Schock as the top tier', () => {
     render(<HandLabel hand={{ name: 'Schock 4', lids: 4, rank: 9040 }} />)
     const badge = screen.getByText('4 Deckel')
-    expect(badge.className).toContain('amber')
+    expect(badge).toHaveAttribute('data-tier', 'schock')
   })
 
-  it('applies violet badge class for rank >= 8000 (General/Jule)', () => {
+  it('marks a General or Jule as the general tier', () => {
     render(<HandLabel hand={{ name: 'Jule', lids: 7, rank: 8700 }} />)
     const badge = screen.getByText('7 Deckel')
-    expect(badge.className).toContain('violet')
+    expect(badge).toHaveAttribute('data-tier', 'general')
   })
 
-  it('applies blue badge class for rank >= 7100 (Straße)', () => {
+  it('marks a Straße as the strasse tier', () => {
     render(<HandLabel hand={{ name: 'Straße 1-2-3', lids: 2, rank: 7400 }} />)
     const badge = screen.getByText('2 Deckel')
-    expect(badge.className).toContain('blue')
+    expect(badge).toHaveAttribute('data-tier', 'strasse')
   })
 
-  it('applies slate badge class for normal hand', () => {
+  it('marks a normal hand as the plain tier', () => {
     render(<HandLabel hand={{ name: '6-5-3', lids: 1, rank: 653 }} />)
     const badge = screen.getByText('1 Deckel')
-    expect(badge.className).toContain('slate')
+    expect(badge).toHaveAttribute('data-tier', 'plain')
   })
 })

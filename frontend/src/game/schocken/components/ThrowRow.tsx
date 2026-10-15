@@ -19,23 +19,23 @@ export const ThrowRow: React.FC<Props> = ({ player, dice, hand, isLoser, delayS 
     initial={{ opacity: 0, x: -24 }}
     animate={{ opacity: 1, x: 0 }}
     transition={{ delay: delayS, type: 'spring', stiffness: 260, damping: 24 }}
-    className={`flex items-center gap-3 px-3 py-2 rounded-xl border ${
-      isLoser ? 'bg-red-500/15 border-red-500/50' : 'bg-white/5 border-white/10'
+    className={`flex items-center gap-3 px-3 py-2 rounded-lg border-l-4 ${
+      isLoser ? 'bg-pub-ember/15 border-pub-ember' : 'bg-pub-plank border-transparent'
     }`}
   >
     {player && <AvatarDisplay avatarId={player.avatar} size="sm" />}
-    <span className="flex-1 text-white font-bold truncate">{player?.username ?? '?'}</span>
+    <span className="flex-1 min-w-0 text-pub-foam font-semibold truncate">{player?.username ?? '?'}</span>
     <div className="flex gap-1">
       {[...dice].sort((a, b) => b.value - a.value).map(d => (
         <span
           key={d.id}
-          className="w-7 h-7 flex items-center justify-center rounded-md bg-white text-slate-900 text-sm font-black"
+          className="w-7 h-7 flex items-center justify-center rounded-md bg-pub-foam text-pub-wood font-pub text-base font-bold"
         >
           {d.value}
         </span>
       ))}
     </div>
-    <span className={`px-2 py-0.5 rounded-full border text-xs font-bold ${getBadgeClass(hand.rank)}`}>
+    <span className={`px-2 py-0.5 rounded-full border text-xs font-semibold whitespace-nowrap ${getBadgeClass(hand.rank)}`}>
       {hand.name}
     </span>
   </motion.li>
