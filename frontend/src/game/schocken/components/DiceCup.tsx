@@ -17,6 +17,13 @@ export const DiceCup: React.FC<Props> = ({ onReveal, onRevealComplete, revealing
     if (info.offset.y <= -LIFT_THRESHOLD_PX) onReveal();
   };
 
+  // Keyboard alternative to the drag gesture
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (revealing || (e.key !== 'Enter' && e.key !== ' ')) return;
+    e.preventDefault();
+    onReveal();
+  };
+
   return (
     // A native drag (e.g. of a text selection covering the cup) would cancel the pointer gesture
     <div className="flex flex-col items-center gap-3" onDragStart={e => e.preventDefault()}>
@@ -48,6 +55,11 @@ export const DiceCup: React.FC<Props> = ({ onReveal, onRevealComplete, revealing
         // No whileDrag: its reset animation would fire onAnimationComplete mid-lift.
         dragSnapToOrigin
         onDragEnd={handleDragEnd}
+        role="button"
+        tabIndex={revealing ? -1 : 0}
+        aria-label="Becher heben"
+        onKeyDown={handleKeyDown}
+        className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-pub-foam"
         style={{ borderRadius: 16, touchAction: 'none', cursor: revealing ? 'default' : 'grab' }}
       >
         <svg
