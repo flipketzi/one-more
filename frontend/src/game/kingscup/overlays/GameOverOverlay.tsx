@@ -2,19 +2,39 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useGame } from '../../../context/GameContext';
 import { useLocale } from '../../../context/LocaleContext';
+import { returnToLobby } from '../api/kingsCupClient';
+import { GameOverReason } from '../types';
 
 interface Props {
-  reason: string;
+  reason: GameOverReason | null;
+  cupDrinkerUsername: string | null;
 }
 
-export const GameOverOverlay: React.FC<Props> = ({ reason }) => {
-  const { clearSession, goTo } = useGame();
+export const GameOverOverlay: React.FC<Props> = ({ reason, cupDrinkerUsername }) => {
+  const { goTo, session, player } = useGame();
   const { t } = useLocale();
+  const isHost = session?.hostId === player?.id;
 
-  const handleLeave = () => {
-    clearSession();
-    goTo('home');
+  // The host ends the game server-side so the session can be restarted; everyone
+  // still on the game screen follows via GAME_ABANDONED. Guests just leave locally.
+  const handleBackToLobby = async () => {
+    if (!isHost || !session) {
+      goTo('lobby');
+      return;
+    }
+    try {
+      await returnToLobby(session.code);
+    } catch {
+      goTo('lobby');
+    }
   };
+
+  const gameOverMessage = (): string | null => {
+    if (reason === 'LAST_KING' && cupDrinkerUsername) return t.kingsCup.cupDrinkerDrinks(cupDrinkerUsername);
+    if (reason === 'DECK_EMPTY') return t.kingsCup.deckEmpty;
+    return null;
+  };
+  const message = gameOverMessage();
 
   return (
     <motion.div
@@ -31,15 +51,15 @@ export const GameOverOverlay: React.FC<Props> = ({ reason }) => {
         🎉
       </motion.div>
       <h1 className="text-white font-black text-4xl mb-3">{t.kingsCup.gameOver}</h1>
-      <p className="text-slate-400 text-center mb-8 max-w-xs">{reason}</p>
+      {message && <p className="text-slate-400 text-center mb-8 max-w-xs text-lg">{message}</p>}
 
       <motion.button
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
-        onClick={handleLeave}
+        onClick={handleBackToLobby}
         className="w-full max-w-xs py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-400 text-black font-bold text-lg"
       >
-        {t.kingsCup.backToHome}
+        {t.kingsCup.backToLobby}
       </motion.button>
     </motion.div>
   );

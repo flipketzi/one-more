@@ -149,7 +149,9 @@ export interface Translation {
     brainFreeze: string;
     roundOver: string;
     gameOver: string;
-    backToHome: string;
+    cupDrinkerDrinks: (name: string) => string;
+    deckEmpty: string;
+    backToLobby: string;
     // ThumbQueenButton
     usesLeft: (n: number) => string;
     // KingsCupScreen host button

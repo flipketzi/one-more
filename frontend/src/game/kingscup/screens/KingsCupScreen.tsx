@@ -153,8 +153,12 @@ const KingsCupScreenInner: React.FC = () => {
     <div className="app-bg min-h-dvh flex flex-col">
       {/* Overlays */}
       <AnimatePresence>
-        {state.phase === 'GAME_OVER' && state.gameOverReason && (
-          <GameOverOverlay key="gameover" reason={state.gameOverReason} />
+        {state.phase === 'GAME_OVER' && (
+          <GameOverOverlay
+            key="gameover"
+            reason={state.gameOver?.reason ?? null}
+            cupDrinkerUsername={state.gameOver?.cupDrinkerUsername ?? null}
+          />
         )}
         {state.pendingSipNotification && state.pendingSipNotification.targetPlayerId === myPlayerId && (
           <SipNotificationOverlay

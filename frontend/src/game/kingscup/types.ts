@@ -21,6 +21,8 @@ export interface JackRuleDto {
 
 export type TouchRaceType = 'CARD_FOUR' | 'QUEEN';
 
+export type GameOverReason = 'LAST_KING' | 'DECK_EMPTY';
+
 export interface TouchRaceStateDto {
   raceId: string;
   raceType: string;
@@ -75,5 +77,5 @@ export type GameEvent =
   | { type: 'THUMB_QUEEN_ASSIGNED'; sessionCode: string; queenPlayerId: string; queenUsername: string; usesLeft: number }
   | { type: 'KING_DRAWN'; sessionCode: string; kingsDrawn: number; drawerUsername: string; kingsCupContents: string[]; isLastKing: boolean; lastKingDrinkerPlayerId: string | null }
   | { type: 'TURN_ADVANCED'; sessionCode: string; nextDrawerPlayerId: string; nextDrawerUsername: string; cardsRemaining: number }
-  | { type: 'GAME_OVER'; sessionCode: string; reason: string }
+  | { type: 'GAME_OVER'; sessionCode: string; reason: GameOverReason; cupDrinkerUsername: string | null }
   | { type: 'GAME_ABANDONED'; sessionCode: string };

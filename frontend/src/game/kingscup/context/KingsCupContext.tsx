@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
-import { GameEvent, JackRuleDto, KingsCupState, TouchRaceType, WordSubmissionDto } from '../types';
+import { GameEvent, GameOverReason, JackRuleDto, KingsCupState, TouchRaceType, WordSubmissionDto } from '../types';
 import { pairBuddies } from '../util/drinkingBuddies';
 
 interface KCLocalState extends KingsCupState {
@@ -7,7 +7,7 @@ interface KCLocalState extends KingsCupState {
   pendingSipNotification: { targetPlayerId: string; assignedByUsername: string } | null;
   touchRaceResult: { loserPlayerId: string; loserUsername: string } | null;
   wordRoundResult: { loserPlayerId: string; loserUsername: string } | null;
-  gameOverReason: string | null;
+  gameOver: { reason: GameOverReason; cupDrinkerUsername: string | null } | null;
 }
 
 type KCAction =
@@ -24,7 +24,7 @@ type KCAction =
   | { type: 'THUMB_QUEEN_ASSIGNED'; queenPlayerId: string; usesLeft: number }
   | { type: 'KING_DRAWN'; kingsDrawn: number; kingsCupContents: string[] }
   | { type: 'TURN_ADVANCED'; nextDrawerPlayerId: string; cardsRemaining: number }
-  | { type: 'GAME_OVER'; reason: string }
+  | { type: 'GAME_OVER'; reason: GameOverReason; cupDrinkerUsername: string | null }
   | { type: 'DISMISS_SIP_NOTIFICATION' }
   | { type: 'DISMISS_RACE_RESULT' }
   | { type: 'DISMISS_WORD_RESULT' };
@@ -48,7 +48,7 @@ const initialState: KCLocalState = {
   pendingSipNotification: null,
   touchRaceResult: null,
   wordRoundResult: null,
-  gameOverReason: null,
+  gameOver: null,
 };
 
 function reducer(state: KCLocalState, action: KCAction): KCLocalState {
@@ -148,7 +148,7 @@ function reducer(state: KCLocalState, action: KCAction): KCLocalState {
       };
 
     case 'GAME_OVER':
-      return { ...state, phase: 'GAME_OVER', gameOverReason: action.reason };
+      return { ...state, phase: 'GAME_OVER', gameOver: { reason: action.reason, cupDrinkerUsername: action.cupDrinkerUsername } };
 
     case 'DISMISS_SIP_NOTIFICATION':
       return { ...state, pendingSipNotification: null };
@@ -214,7 +214,7 @@ export const KingsCupProvider: React.FC<{ children: ReactNode }> = ({ children }
         dispatch({ type: 'TURN_ADVANCED', nextDrawerPlayerId: event.nextDrawerPlayerId, cardsRemaining: event.cardsRemaining });
         break;
       case 'GAME_OVER':
-        dispatch({ type: 'GAME_OVER', reason: event.reason });
+        dispatch({ type: 'GAME_OVER', reason: event.reason, cupDrinkerUsername: event.cupDrinkerUsername });
         break;
     }
   };
