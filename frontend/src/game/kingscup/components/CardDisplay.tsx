@@ -22,10 +22,6 @@ const RANK_COLORS: Record<string, string> = {
   'A': 'from-yellow-400 to-amber-600',
 };
 
-const SUIT_SYMBOLS: Record<string, string> = {
-  H: '♥', D: '♦', C: '♣', S: '♠',
-};
-
 const RED_SUITS = new Set(['H', 'D']);
 
 export const CardDisplay: React.FC<Props> = ({ card }) => {
@@ -47,7 +43,7 @@ export const CardDisplay: React.FC<Props> = ({ card }) => {
 
   const rank = displayCard ? CardDeck.rank(displayCard) : null;
   const suit = displayCard ? CardDeck.suit(displayCard) : null;
-  const suitSymbol = suit ? SUIT_SYMBOLS[suit] : null;
+  const suitSymbol = displayCard ? CardDeck.suitSymbol(displayCard) : null;
   const isRed = suit ? RED_SUITS.has(suit) : false;
   const gradient = rank ? RANK_COLORS[rank] : 'from-slate-600 to-slate-800';
 
@@ -71,7 +67,7 @@ export const CardDisplay: React.FC<Props> = ({ card }) => {
           style={{ backfaceVisibility: 'hidden', position: 'absolute', inset: 0, transform: 'rotateY(180deg)' }}
           className={`rounded-2xl bg-gradient-to-br ${gradient} border border-white/20 flex flex-col items-center justify-center shadow-xl`}
         >
-          <span className={`text-5xl font-black select-none ${isRed ? 'text-white' : 'text-white'}`}>{rank}</span>
+          <span className="text-5xl font-black select-none text-white">{rank}</span>
           <span className={`text-3xl select-none mt-1 ${isRed ? 'text-red-200' : 'text-slate-200'}`}>{suitSymbol}</span>
         </div>
       </motion.div>

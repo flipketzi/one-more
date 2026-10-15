@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { advanceTurn } from '../api/kingsCupClient';
 import { useLocale } from '../../../context/LocaleContext';
+import { CardDeck } from '../util/cardDeck';
 
 interface Props {
   sessionCode: string;
@@ -48,7 +49,7 @@ export const DisplayRuleView: React.FC<Props> = ({
             <div className="mt-3 text-amber-400 font-bold text-sm">
               {t.kingsCup.kingsDrawnLabel} {kingsDrawn}/4
               {kingsCupContents && kingsCupContents.length > 0 && (
-                <span className="ml-2 text-slate-400">{t.kingsCup.cupContentsLabel} {kingsCupContents.join(', ')}</span>
+                <span className="ml-2 text-slate-400">{t.kingsCup.cupContentsLabel} {kingsCupContents.map(CardDeck.suitSymbol).join(' ')}</span>
               )}
             </div>
           )}
