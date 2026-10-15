@@ -122,6 +122,17 @@ export const de: Translation = {
     playFirstRhyme: 'Spielt erst die Reimrunde, dann wählt, wer verloren hat.',
     wordLabelCategory: 'Kategorie',
     wordLabelRhyme: 'Reime auf',
+    rhymeSeeds: {
+      cat: 'Katze', day: 'Tag', night: 'Nacht', beer: 'Bier', love: 'Herz', moon: 'Mond', hat: 'Hut',
+      lake: 'See', fire: 'Feuer', stone: 'Stein', rain: 'Regen', king: 'König', run: 'Lauf',
+      bright: 'Licht', song: 'Lied', fun: 'Spaß',
+    },
+    categories: {
+      countries: 'Länder', car_brands: 'Automarken', pizza_toppings: 'Pizzabeläge', superheroes: 'Superhelden',
+      kitchen_things: 'Dinge in der Küche', beer_types: 'Biersorten', animal_sounds: 'Tiergeräusche',
+      athletes: 'Berühmte Sportler', beach_things: 'Dinge am Strand', movie_villains: 'Filmbösewichte',
+      tv_shows: 'Serien', cocktails: 'Cocktails', board_games: 'Brettspiele', apps: 'Apps',
+    },
     pickBuddy: 'Such dir einen Trinkpartner aus:',
     drawerPickingBuddy: 'Der Ziehende sucht einen Trinkpartner…',
     hasBuddy: 'hat Partner',

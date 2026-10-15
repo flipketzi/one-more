@@ -122,6 +122,17 @@ export const en: Translation = {
     playFirstRhyme: 'Play the rhyme game first, then pick who lost.',
     wordLabelCategory: 'Category',
     wordLabelRhyme: 'Rhyme with',
+    rhymeSeeds: {
+      cat: 'cat', day: 'day', night: 'night', beer: 'beer', love: 'love', moon: 'moon', hat: 'hat',
+      lake: 'lake', fire: 'fire', stone: 'stone', rain: 'rain', king: 'king', run: 'run',
+      bright: 'bright', song: 'song', fun: 'fun',
+    },
+    categories: {
+      countries: 'Countries', car_brands: 'Car brands', pizza_toppings: 'Pizza toppings', superheroes: 'Superheroes',
+      kitchen_things: 'Things in a kitchen', beer_types: 'Types of beer', animal_sounds: 'Animal sounds',
+      athletes: 'Famous athletes', beach_things: 'Things at a beach', movie_villains: 'Movie villains',
+      tv_shows: 'TV shows', cocktails: 'Cocktail names', board_games: 'Board games', apps: 'App names',
+    },
     pickBuddy: 'Pick your drinking buddy:',
     drawerPickingBuddy: 'The drawer is picking a drinking buddy…',
     hasBuddy: 'has buddy',

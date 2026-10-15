@@ -113,6 +113,9 @@ export interface Translation {
     playFirstRhyme: string;
     wordLabelCategory: string;
     wordLabelRhyme: string;
+    /** Keyed by the backend's KingsCupData keys */
+    rhymeSeeds: Record<string, string>;
+    categories: Record<string, string>;
     // BuddyPickView
     pickBuddy: string;
     drawerPickingBuddy: string;

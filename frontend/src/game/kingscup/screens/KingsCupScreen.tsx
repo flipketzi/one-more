@@ -82,13 +82,15 @@ const KingsCupScreenInner: React.FC = () => {
         const rank = state.currentCard ? state.currentCard.slice(0, -1) : null;
         const isCategory = rank === '10';
         const isRhyme = rank === '9';
+        const words = isRhyme ? t.kingsCup.rhymeSeeds : t.kingsCup.categories;
+        const pendingWord = state.pendingCategory ? words[state.pendingCategory] ?? state.pendingCategory : undefined;
         return (
           <SipPickView
             sessionCode={session.code}
             players={state.turnOrder}
             myPlayerId={myPlayerId}
             isMyTurn={isMyTurn}
-            pendingWord={state.pendingCategory ?? undefined}
+            pendingWord={pendingWord}
             wordLabel={isRhyme ? t.kingsCup.wordLabelRhyme : isCategory ? t.kingsCup.wordLabelCategory : undefined}
             hint={
               isCategory
