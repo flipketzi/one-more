@@ -12,10 +12,7 @@ import { OpeningRoundOverlay } from '../overlays/OpeningRoundOverlay';
 import { RoundEndedOverlay } from '../overlays/RoundEndedOverlay';
 import { RoundEvaluationOverlay } from '../overlays/RoundEvaluationOverlay';
 import { RevealPhaseOverlay } from '../overlays/RevealPhaseOverlay';
-
-const FOCUS_RING = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pub-foam';
-const PRIMARY_BUTTON = `w-full py-4 rounded-xl bg-pub-beer text-pub-wood font-pub font-bold text-xl shadow-[0_4px_0_#9A6A1E] ${FOCUS_RING}`;
-const SECONDARY_BUTTON = `w-full py-3 rounded-xl border-2 border-pub-foam/60 text-pub-foam font-pub font-semibold text-lg ${FOCUS_RING}`;
+import { DICE_TRAY, FOCUS_RING, PRIMARY_BUTTON, SECONDARY_BUTTON } from '../components/pubStyles';
 
 const SchockenScreenInner: React.FC = () => {
   const { session, player } = useGame();
@@ -69,7 +66,7 @@ const SchockenScreenInner: React.FC = () => {
 
       <main className="flex-1 flex flex-col items-center justify-center gap-5 px-4 py-6">
         {/* The dice tray: felt lining inside a leather rim */}
-        <div className="w-full max-w-sm min-h-[300px] rounded-[28px] bg-pub-felt border-[6px] border-pub-leather shadow-[inset_0_4px_18px_rgba(0,0,0,0.55)] flex items-center justify-center p-4">
+        <div className={`w-full max-w-sm min-h-[300px] ${DICE_TRAY} flex items-center justify-center p-4`}>
           <AnimatePresence mode="wait">
             {game.phase === 'IDLE' && (
               <motion.p
