@@ -2,6 +2,8 @@ import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Die, HandResult, PublicPlayerState, RollPhase } from '../types';
 import { DiceCup } from '../components/DiceCup';
+import { getBadgeClass } from '../components/HandLabel';
+import { DICE_TRAY, OVERLAY_BACKDROP } from '../components/pubStyles';
 
 interface Props {
   playerOrder: PublicPlayerState[];
@@ -13,13 +15,6 @@ interface Props {
   myHand: HandResult | null;
   onReveal: () => void;
   revealCup: () => Promise<void>;
-}
-
-function handBadgeColor(rank: number): string {
-  if (rank >= 9000) return 'bg-amber-500/20 border-amber-500/50 text-amber-300';
-  if (rank >= 8000) return 'bg-violet-500/20 border-violet-500/50 text-violet-300';
-  if (rank >= 7100) return 'bg-blue-500/20 border-blue-500/50 text-blue-300';
-  return 'bg-slate-500/20 border-slate-500/30 text-slate-300';
 }
 
 const CupSvg: React.FC = () => (
@@ -42,14 +37,14 @@ const MyDicePreview: React.FC<{ dice: Die[]; hand: HandResult | null }> = ({ dic
       {[...dice].sort((a, b) => b.value - a.value).map(d => (
         <div
           key={d.id}
-          className="w-12 h-12 flex items-center justify-center rounded-xl bg-white/10 border border-white/20 text-white text-2xl font-black"
+          className="w-12 h-12 flex items-center justify-center rounded-lg bg-pub-foam text-pub-wood font-pub text-3xl font-bold"
         >
           {d.value > 0 ? d.value : '?'}
         </div>
       ))}
     </div>
     {hand && (
-      <span className={`px-3 py-1 rounded-full border text-sm font-bold ${handBadgeColor(hand.rank)}`}>
+      <span className={`px-3 py-1 rounded-full border text-sm font-semibold ${getBadgeClass(hand.rank)}`}>
         {hand.name}
       </span>
     )}
@@ -96,15 +91,13 @@ export const RevealPhaseOverlay: React.FC<Props> = ({
       // Fades out underneath the RoundEvaluationOverlay after ROUND_ENDED
       exit={{ opacity: 0, transition: { duration: 0.5 } }}
       transition={{ duration: 0.35 }}
-      className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col"
+      className={`${OVERLAY_BACKDROP} z-50 flex flex-col`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-6 pt-8 pb-4">
-        <span className="text-slate-400 text-sm font-bold tracking-widest uppercase">
-          Aufdeckphase
-        </span>
+      <div className="flex items-baseline justify-between px-4 pt-6 pb-4">
+        <h2 className="font-pub font-bold text-2xl">Aufdecken</h2>
         {revealQueue.length > 0 && (
-          <span className="text-slate-500 text-xs">
+          <span className="text-pub-ash text-sm">
             Noch {revealQueue.length} Aufdeckung{revealQueue.length !== 1 ? 'en' : ''}
           </span>
         )}
@@ -125,15 +118,15 @@ export const RevealPhaseOverlay: React.FC<Props> = ({
           >
             {hasActiveRevealer ? (
               <>
-                <p className="text-slate-400 text-sm mb-1">
+                <p className="text-pub-ash text-base mb-1">
                   {isMyTurn ? 'Du deckst auf' : 'deckt auf\u2026'}
                 </p>
-                <p className="text-white font-black text-3xl">
+                <p className="font-pub font-extrabold text-4xl text-pub-foam">
                   {revealer?.username ?? '\u2026'}
                 </p>
               </>
             ) : (
-              <p className="text-slate-400 text-sm">Alle haben aufgedeckt</p>
+              <p className="text-pub-ash text-base">Alle haben aufgedeckt</p>
             )}
           </motion.div>
         </AnimatePresence>
@@ -143,7 +136,7 @@ export const RevealPhaseOverlay: React.FC<Props> = ({
           Each element has its own AnimatePresence so they fade in/out in parallel
           instead of sequentially (no mode="wait" delay).
         */}
-        <div className="relative flex items-center justify-center" style={{ height: 200 }}>
+        <div className={`relative w-full max-w-sm flex items-center justify-center ${DICE_TRAY}`} style={{ height: 260 }}>
           <AnimatePresence>
             {showMyCup && (
               <motion.div
@@ -188,14 +181,10 @@ export const RevealPhaseOverlay: React.FC<Props> = ({
                 transition={{ duration: 0.25 }}
                 className="absolute inset-0 flex flex-col items-center justify-center gap-3"
               >
-                <motion.div
-                  animate={{ scale: [1, 1.05, 1] }}
-                  transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
-                  className="opacity-30"
-                >
+                <div className="opacity-40">
                   <CupSvg />
-                </motion.div>
-                <p className="text-slate-500 text-sm">
+                </div>
+                <p className="text-pub-foam/75 text-sm">
                   Warten auf {revealer!.username}…
                 </p>
               </motion.div>
@@ -206,8 +195,8 @@ export const RevealPhaseOverlay: React.FC<Props> = ({
 
       {/* Already-revealed hands */}
       {revealedPlayers.length > 0 && (
-        <div className="px-4 pb-8">
-          <p className="text-slate-500 text-xs mb-2 text-center">Bereits aufgedeckt</p>
+        <div className="px-4 pb-8 pt-4">
+          <p className="text-pub-ash text-sm mb-2 text-center">Bereits aufgedeckt</p>
           <div className="flex flex-wrap justify-center gap-2">
             <AnimatePresence>
               {revealedPlayers.map(p => (
@@ -217,22 +206,24 @@ export const RevealPhaseOverlay: React.FC<Props> = ({
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                  className={`flex flex-col gap-1 px-3 py-2 rounded-xl border ${handBadgeColor(p.hand!.rank)}`}
+                  className="flex flex-col items-start gap-1.5 px-3 py-2 rounded-lg bg-pub-plank"
                 >
-                  <span className="text-xs font-semibold opacity-70">{p.username}</span>
+                  <span className="text-sm font-semibold text-pub-foam">{p.username}</span>
                   {p.dice && p.dice.length > 0 && (
                     <div className="flex gap-1">
                       {[...p.dice].sort((a, b) => b.value - a.value).map(d => (
                         <span
                           key={d.id}
-                          className="w-6 h-6 flex items-center justify-center rounded bg-black/30 text-xs font-black"
+                          className="w-6 h-6 flex items-center justify-center rounded bg-pub-foam text-pub-wood font-pub text-sm font-bold"
                         >
                           {d.value}
                         </span>
                       ))}
                     </div>
                   )}
-                  <span className="text-xs font-bold">{p.hand!.name}</span>
+                  <span className={`px-2 py-0.5 rounded-full border text-xs font-semibold ${getBadgeClass(p.hand!.rank)}`}>
+                    {p.hand!.name}
+                  </span>
                 </motion.div>
               ))}
             </AnimatePresence>

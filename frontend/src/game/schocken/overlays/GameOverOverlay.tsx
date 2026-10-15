@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useGame } from '../../../context/GameContext';
 import { returnToLobby } from '../api/schockenApi';
+import { OVERLAY_BACKDROP, PRIMARY_BUTTON } from '../components/pubStyles';
 import { PublicPlayerState } from '../types';
 
 interface Props {
@@ -32,29 +33,25 @@ export const GameOverOverlay: React.FC<Props> = ({ loserPlayerId, players }) => 
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/95 p-6"
+      className={`${OVERLAY_BACKDROP} z-50 flex flex-col items-center justify-center p-6`}
     >
-      <motion.div
-        initial={{ scale: 0.5 }}
-        animate={{ scale: 1 }}
+      <h1 className="font-pub font-bold text-3xl text-pub-ash mb-2">Spiel vorbei</h1>
+      <motion.p
+        initial={{ scale: 0.6, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-        className="text-8xl mb-6"
+        className="font-pub font-extrabold text-6xl leading-none text-center text-pub-ember mb-3"
       >
-        🍺
-      </motion.div>
-      <h1 className="text-white font-black text-4xl mb-3">Spiel vorbei!</h1>
-      <p className="text-slate-400 text-center mb-2 max-w-xs text-lg">
         {loser ? `${loser.username} trinkt alles!` : 'Das Spiel ist vorbei.'}
-      </p>
-      <p className="text-slate-500 text-center mb-8 text-sm">
-        {loser ? `${loser.lids} Deckel` : ''}
-      </p>
+      </motion.p>
+      {loser && (
+        <p className="text-pub-foam text-lg text-center mb-10">{loser.lids} Deckel</p>
+      )}
 
       <motion.button
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
+        whileTap={{ scale: 0.97 }}
         onClick={handleBackToLobby}
-        className="w-full max-w-xs py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-400 text-black font-bold text-lg"
+        className={`${PRIMARY_BUTTON} max-w-xs`}
       >
         Zurück zur Lobby
       </motion.button>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ThrowRow } from '../components/ThrowRow';
+import { OVERLAY_BACKDROP, PRIMARY_BUTTON } from '../components/pubStyles';
 import { OpeningRound, PublicPlayerState } from '../types';
 
 interface Props {
@@ -25,7 +26,7 @@ export const OpeningRoundOverlay: React.FC<Props> = ({ openingRound, players, ga
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center gap-6 px-4 py-8 overflow-y-auto"
+      className={`${OVERLAY_BACKDROP} z-50 flex flex-col items-center justify-center gap-6 px-4 py-8 overflow-y-auto`}
     >
       <motion.div
         initial={{ scale: 0.4, rotate: -8, opacity: 0 }}
@@ -33,10 +34,10 @@ export const OpeningRoundOverlay: React.FC<Props> = ({ openingRound, players, ga
         transition={{ type: 'spring', stiffness: 220, damping: 12 }}
         className="text-center"
       >
-        <h1 className="font-black text-6xl leading-none bg-gradient-to-r from-amber-300 via-amber-400 to-orange-500 bg-clip-text text-transparent drop-shadow-[0_0_24px_rgba(245,158,11,0.45)]">
+        <h1 className="font-pub font-extrabold text-7xl leading-none text-pub-beer">
           Erster Hoch!
         </h1>
-        <p className="mt-3 text-slate-300 text-sm">
+        <p className="mt-3 text-pub-ash text-base">
           Jeder würfelt einmal – der schlechteste Wurf fängt an
         </p>
       </motion.div>
@@ -60,19 +61,19 @@ export const OpeningRoundOverlay: React.FC<Props> = ({ openingRound, players, ga
         transition={{ delay: resultDelayS }}
         className="flex flex-col items-center gap-4 text-center"
       >
-        <p className="text-slate-300 text-base">
-          <span className="text-amber-400 font-bold">{loserNames.join(' & ')}</span>
+        <p className="text-pub-foam text-lg leading-snug">
+          <span className="text-pub-ember font-semibold">{loserNames.join(' & ')}</span>
           {loserNames.length > 1 ? ' nehmen je ' : ' nimmt '}
-          <span className="text-amber-400 font-bold">{openingRound.lidValue}</span> Deckel
+          <span className="font-semibold">{openingRound.lidValue}</span> Deckel
           <br />
           {gameOver
-            ? <span className="text-white font-bold">Das Spiel ist sofort vorbei!</span>
-            : <><span className="text-white font-bold">{starterName}</span> fängt an</>}
+            ? <span className="font-semibold">Das Spiel ist sofort vorbei!</span>
+            : <><span className="font-semibold">{starterName}</span> fängt an</>}
         </p>
         <motion.button
-          whileTap={{ scale: 0.95 }}
+          whileTap={{ scale: 0.97 }}
           onClick={onDismiss}
-          className="w-full max-w-xs py-4 rounded-2xl bg-amber-500 text-slate-900 font-black text-lg shadow-lg"
+          className={`${PRIMARY_BUTTON} max-w-xs`}
         >
           {gameOver ? 'Weiter' : "Los geht's!"}
         </motion.button>
