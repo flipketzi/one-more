@@ -324,10 +324,8 @@ class KingsCupService(
             }
             PickTargetType.BUDDY_PICK -> {
                 requirePhase(state, GamePhase.PICK_BUDDY, "pick a buddy")
-                // Store buddy relation both ways
                 val pickerId = ctx.playerId.toString()
-                state.drinkingBuddies[pickerId] = targetPlayerId
-                state.drinkingBuddies[targetPlayerId] = pickerId
+                pairBuddies(state.drinkingBuddies, pickerId, targetPlayerId)
                 state.pendingPickTarget = null
 
                 val picker = playerMap[pickerId]!!
@@ -345,6 +343,13 @@ class KingsCupService(
                 doAdvanceTurn(state, code, entity)
             }
         }
+    }
+
+    /** Each player has at most one buddy, so both players leave their previous pairs first. */
+    private fun pairBuddies(buddies: MutableMap<String, String>, playerId: String, buddyId: String) {
+        listOf(playerId, buddyId).forEach { id -> buddies.remove(id)?.let(buddies::remove) }
+        buddies[playerId] = buddyId
+        buddies[buddyId] = playerId
     }
 
     // ── Touch Race ────────────────────────────────────────────────────────────
