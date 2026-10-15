@@ -1,5 +1,6 @@
 package com.example.onemore.game.kingscup.websocket.event
 
+import com.example.onemore.game.kingscup.domain.model.GameOverReason
 import com.example.onemore.game.kingscup.domain.model.JackRule
 import java.time.Instant
 
@@ -107,7 +108,9 @@ class TurnAdvancedEvent(
 
 class GameOverEvent(
     sessionCode: String,
-    val reason: String
+    val reason: GameOverReason,
+    /** Who drinks the King's Cup — set only when the last king ended the game. */
+    val cupDrinkerUsername: String? = null
 ) : GameEvent("GAME_OVER", sessionCode)
 
 class GameAbandonedEvent(sessionCode: String) : GameEvent("GAME_ABANDONED", sessionCode)

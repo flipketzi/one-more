@@ -110,7 +110,7 @@ class KingsCupService(
         if (state.deck.isEmpty()) {
             state.phase = GamePhase.GAME_OVER
             persist(entity, state)
-            gameEventPublisher.publish(GameOverEvent(code, "Deck is empty"))
+            gameEventPublisher.publish(GameOverEvent(code, GameOverReason.DECK_EMPTY))
             return
         }
 
@@ -211,7 +211,9 @@ class KingsCupService(
         if (isLastKing) {
             state.phase = GamePhase.GAME_OVER
             persist(entity, state)
-            gameEventPublisher.publish(GameOverEvent(code, "Last king drawn — someone drinks the cup!"))
+            gameEventPublisher.publish(
+                GameOverEvent(code, GameOverReason.LAST_KING, cupDrinkerUsername = ctx.username)
+            )
             return
         }
 
@@ -246,7 +248,7 @@ class KingsCupService(
         if (state.deck.isEmpty()) {
             state.phase = GamePhase.GAME_OVER
             persist(entity, state)
-            gameEventPublisher.publish(GameOverEvent(code, "Deck exhausted"))
+            gameEventPublisher.publish(GameOverEvent(code, GameOverReason.DECK_EMPTY))
         }
     }
 
