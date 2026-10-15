@@ -5,11 +5,25 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Poppins', 'system-ui', 'sans-serif'],
+        // Schocken: condensed grotesk like beer labels and pub boards, Barlow for running text
+        pub: ['"Barlow Condensed"', 'system-ui', 'sans-serif'],
+        'pub-body': ['Barlow', 'system-ui', 'sans-serif'],
       },
       colors: {
         surface: 'rgba(255,255,255,0.05)',
         'surface-hover': 'rgba(255,255,255,0.08)',
         border: 'rgba(255,255,255,0.1)',
+        // Schocken pub palette
+        pub: {
+          wood: '#241710',      // dark stained bar counter
+          plank: '#34231A',     // lighter wood for raised surfaces
+          leather: '#5A3420',   // dice cup leather
+          felt: '#1E4636',      // felt lining of the dice tray
+          beer: '#E8A93B',      // pils — primary actions only
+          foam: '#F3EBDD',      // foam, cigarette paper, dice, coasters
+          ash: '#A89C90',       // secondary text
+          ember: '#E2492E',     // glowing cigarette tip — whoever drinks
+        },
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
