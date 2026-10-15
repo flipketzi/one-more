@@ -125,6 +125,16 @@ class KingsCupServiceTest {
         assertEquals(expected, currentState().drinkingBuddies)
     }
 
+    // ── Persistence ───────────────────────────────────────────────────────────
+
+    @Test
+    fun `a game stored with the removed word round field still loads`() {
+        givenState(deck = listOf("3H", "2C"))
+        entity.gameStateJson = entity.gameStateJson.replaceFirst("{", """{"wordRound":null,""")
+
+        assertDoesNotThrow { service.drawCard(ctx(anna), session.sessionCode) }
+    }
+
     // ── Kings ─────────────────────────────────────────────────────────────────
 
     @Test
