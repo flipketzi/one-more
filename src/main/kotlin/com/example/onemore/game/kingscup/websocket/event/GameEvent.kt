@@ -45,7 +45,8 @@ class TouchRaceResultEvent(
     val raceId: String,
     val loserPlayerId: String,
     val loserUsername: String,
-    val touchOrder: List<String>
+    val touchOrder: List<String>,
+    val raceType: String
 ) : GameEvent("TOUCH_RACE_RESULT", sessionCode)
 
 class WordRoundStartedEvent(

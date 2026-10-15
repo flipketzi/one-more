@@ -456,12 +456,21 @@ class KingsCupService(
                 raceId = raceId,
                 loserPlayerId = loserId,
                 loserUsername = loser?.username ?: loserId,
-                touchOrder = race.touchOrder.toList()
+                touchOrder = race.touchOrder.toList(),
+                raceType = race.raceType.name
             )
         )
 
-        // Advance turn after race
-        doAdvanceTurn(state, code, entity)
+        when (race.raceType) {
+            TouchRaceType.CARD_FOUR -> doAdvanceTurn(state, code, entity)
+            // The queen interrupts between draws — the current drawer keeps their turn
+            TouchRaceType.QUEEN -> resumeDrawing(state, entity)
+        }
+    }
+
+    private fun resumeDrawing(state: KingsCupGameState, entity: KingsCupState) {
+        state.phase = GamePhase.WAITING_TO_DRAW
+        persist(entity, state)
     }
 
     // ── Queen Button ──────────────────────────────────────────────────────────
